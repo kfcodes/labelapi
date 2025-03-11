@@ -36,6 +36,9 @@ async def print_combined_pallet_label(data):
 
 async def print_pallet_label(id):
     try:
+        # SETTING THE VARIABLES FOR THE FUNCTION
+        printer_address = os.getenv("BIGLABELID1")
+        printer_port = int(os.getenv("BIGLABELPORT1"))
         label_info_string = str(f"{os.getenv('PALLETLABELPART1')}")
         label_info = read_to_list_index(label_info_string.format(int(id),int(id)))
         print("Printing Pallet Label", label_info)
