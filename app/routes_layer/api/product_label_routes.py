@@ -3,19 +3,15 @@ from business_logic_layer.data_controller_layer.label_controllers.print_label_co
 
 product_label_router = APIRouter();
 
-# LABEL PRINTER API ROUTES
-@product_label_router.post("/print_small_product_label/{id}")
-async def print_small_product_label_function(id: int, body: Request):
-    if body:
-        body =  await body.json();
-        quantity = int(body["qty"])
-        response = await print_small_product_label(id, quantity);
-        return response;
-    else:
-        return "Request Body cannot be empty"
+# CHECK THE DATABASE TO CONFIRM PALLET LABEL INFORMATION IS PRESENT
+@product_label_router.get("/label_info/{id}")
+async def label_info_function(id: str):
+    response = await get_label_info(id);
+    return response
 
-@product_label_router.post("/print_large_product_label/{id}")
-async def print_large_product_label_function(id: int, body: Request):
+# PRINT THE ACTUAL PALLET LABEL FOR THE PRODUCT BY ID
+@product_label_router.post("/print_product_label/{id}")
+async def product_label_function(id: int, body: Request):
     if body:
         body =  await body.json();
         quantity = int(body["qty"])
@@ -28,3 +24,9 @@ async def print_large_product_label_function(id: int, body: Request):
         return response;
     else:
         return "Request Body cannot be empty"
+
+# TESING EXAMPLE FOR NEW PRODUCT LABELS
+@product_label_router.post("/new_product_labe/{id}")
+async def print_specific_label_function(id):
+    response = await print_specific_label_now_2(id);
+    return response;

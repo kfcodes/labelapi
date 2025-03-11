@@ -3,29 +3,18 @@ from business_logic_layer.data_controller_layer.label_controllers.print_label_co
 
 pallet_label_router = APIRouter();
 
-@pallet_label_router.post("/print_blank_labels")
-async def print_blank_label_function():
-    response = await print_blank_pallet_label();
-    return response;
-
-@pallet_label_router.post("/print_large_combined_label")
-async def print_large_combined_label_function(data: Request):
-    json_data =  await data.json();
-    response = await print_combined_pallet_label(json_data);
-    return response;
-
-@pallet_label_router.get("/label/{id}")
+@pallet_label_router.get("/pallet_label/{id}")
 async def print_pallet_label_function_function(id: int):
     response = await print_pallet_label(id);
     return response
 
-@pallet_label_router.get("/label_info/{id}")
-async def label_info_function(id: str):
-    response = await get_label_info(id);
-    return response
-
-@pallet_label_router.post("/new_product_labe/{id}")
-async def print_specific_label_function(id):
-    response = await print_specific_label_now_2(id);
+@pallet_label_router.post("/blank_pallet_label")
+async def print_blank_label_function():
+    response = await print_blank_pallet_label();
     return response;
 
+@pallet_label_router.post("/stacked_pallet_label")
+async def print_large_combined_label_function(data: Request):
+    json_data =  await data.json();
+    response = await print_combined_pallet_label(json_data);
+    return response;
