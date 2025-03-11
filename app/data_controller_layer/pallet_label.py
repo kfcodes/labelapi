@@ -36,20 +36,23 @@ async def print_combined_pallet_label(data):
 
 async def print_pallet_label(id):
     try:
-        # SETTING THE VARIABLES FOR THE FUNCTION
+        # setting the variables for the printer
         printer_address = os.getenv("BIGLABELID1")
         printer_port = int(os.getenv("BIGLABELPORT1"))
+
+        # getting the label structure
         label_info_string = str(f"{os.getenv('PALLETLABELPART1')}")
+        # getting the individual pallet label information
         label_info = read_to_list_index(label_info_string.format(int(id),int(id)))
-        print("Printing Pallet Label", label_info)
-        print("label_info", label_info)
+        # print("Printing Pallet Label", label_info)
+        # print("label_info", label_info)
         outline = create_pallet_label_outline()
         pallet_products = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(id)} {os.getenv('GETPRODUCTSONPALLET2')}")
         products = add_products_to_label(pallet_products)
         body = create_pallet_label_data(label_info[0])
-        print(body)
+        # print(body)
         label_data = outline + products + body
-        print(label_data)
+        # print(label_data)
         update_pallet(id);
         response = print_large_label(label_data)
         return response

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-def print_large_label(label_string, printer_address, printer_port):
+def print_zpl_label(label_string, printer_address, printer_port):
 	try:
 		# encoded label string
 		label =  label_string.encode(encoding="ascii",errors="ignore")
@@ -14,8 +14,7 @@ def print_large_label(label_string, printer_address, printer_port):
 		mysocket.send(label) #using bytes
 		mysocket.close () #closing connection
 
-		return f"printed the label to {printer_address}, {printer_port}"
+		return f"printed the pallet label on printer: {printer_address}, {printer_port}"
 
-	except exception as ex:
-
-		return f"could not print label on {printer_address}, port: {printer_port}due to the following: \n {ex}"
+	except Exception as ex:
+		return str(f"could not print label on {printer_address}, port: {printer_port}due to the following: \n {ex}")
