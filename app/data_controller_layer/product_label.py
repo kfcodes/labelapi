@@ -19,17 +19,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-async def print_small_product_label(id):
-    try:
-        label_info = read_to_list_index(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
-        outline = create_small_label_outline()
-        body = create_small_label_data(label_info, 1)
-        label_data = outline + body
-        response = print_small_label(label_data)
-        return response
-    except Exception as ex:
-        print("Data could not be processed: \n", ex)
-
 async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
     try:
         label_info = read_to_list_index(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
@@ -39,21 +28,18 @@ async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
         if label_type == 1:
             outline = label_type_1.create_large_product_label_outline()
             body = label_type_1.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            print(body)
             label_data = outline + body
             response = print_large_label(label_data)
 
         elif label_type == 2:
             outline = label_type_2.create_large_product_label_outline()
             body = label_type_2.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            print(body)
             label_data = outline + body
             response = print_large_label(label_data)
 
         elif label_type == 3:
             outline = label_type_3.create_large_product_label_outline()
             body = label_type_3.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            print(body)
             label_data = outline + body
             response = print_large_label(label_data)
 
@@ -61,7 +47,6 @@ async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
             outline = label_type_4.create_large_product_label_outline()
             body = label_type_4.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
             label_data = outline + body
-            print(label_info)
             response = print_large_label(label_data)
 
         elif label_type == 6:
