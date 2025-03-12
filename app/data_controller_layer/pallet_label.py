@@ -24,23 +24,27 @@ async def print_pallet_label(pallet_id, printer_id ):
 
         # get the label structure name from the database
         label_structure_id = read_to_list_index(label_info_string.format(int(pallet_id),int(pallet_id)))
+        # if label_structure_id != None:
+            # get pallet label summary information from DB
+        label_summary_info = str(f"{os.getenv('PALLETLABELPART1')}")
+        # else:
+          #   return "could not do";
 
-        # label with sku
+
+        # Standard label structure
         if label_structure_id == 1:
-            response = "no"
+            pallet_label = standard_pallet_label_structure()
 
-        # blank label with just pallet description
+        # blank label with pallet summary
         if label_structure_id == 2:
-            response = "no"
+            pallet_label = blank_pallet_label_structure()
 
+        # Standard label with product SKU codes
         if label_structure_id == 3:
-            response = "no"
+            pallet_label = standar_pallet_label_with_product_skus_structure()
 
         # default label format
         else:
-            # get pallet label summary information from DB
-            label_summary_info = str(f"{os.getenv('PALLETLABELPART1')}")
-
             # get the pallet item information from DB
             pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(id)} {os.getenv('GETPRODUCTSONPALLET2')}")
             formatted_pallet_contents = format_pallet_contents(pallet_contents)
