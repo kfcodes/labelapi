@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-async def print_pallet_label(label_type_id, pallet_id, printer_id ):
+async def format_and_print_pallet_label(pallet_id, printer_id ):
     try:
         # setting the printer variables if no printer is stated use default/3rd printer
         if printer_id == "s":
@@ -21,8 +21,9 @@ async def print_pallet_label(label_type_id, pallet_id, printer_id ):
             printer_port = int(os.getenv("BIGLABELPORT3"))
 
         # get the label summary information and type id from the database
-        label_summary_info = str(f"{os.getenv('PALLETLABELPART1')}")
-        label_type_id = read_to_list_index(label_summary_info .format(int(pallet_id)))
+        label_summary_info = read_to_list_index(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
+        # label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
+        label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
 
         # blank label with pallet summary
         if label_type_id == 2:

@@ -29,6 +29,7 @@ def create_pallet_label_zpl(label_type, label_summary_info, extra_info):
 
 def add_products_to_label(pallet_products):
     try:
+        # initialising zpl to an empty string
         zpl = ""
 
         # if the pallet has more than 6 items apply "mixed pallet" value to label
@@ -37,7 +38,8 @@ def add_products_to_label(pallet_products):
                     ^FO350,420
                     ^A0,22
                     ^FDMIXED PALLET
-                    ^FS\n
+                    ^FS
+                    \n
                     """
         # if less than 6 distict items apply the pallet item information to the label
         else:
