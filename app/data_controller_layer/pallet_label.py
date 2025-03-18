@@ -10,7 +10,7 @@ load_dotenv(".env")
 async def upload_pallet_label_data_to_printers():
     try:
         # load the label structures into variable
-        label_structure = str(f"{os.getenv('PALLETLABELSTRUCTURE')}")
+        label_structures = str(f"{os.getenv('PALLETLABELSTRUCTURES')}")
 
         # Loop over all printers and send the label information
         # for each printer in printers;
@@ -18,23 +18,26 @@ async def upload_pallet_label_data_to_printers():
 
         response = ""
         # for now just hardocoding the labelprinters
-        printer_address = os.getenv("BIGLABELID1")
-        printer_port = int(os.getenv("BIGLABELPORT1"))
-        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
-        response += printer_response;
-        printer_address = os.getenv("BIGLABELID2")
-        printer_port = int(os.getenv("BIGLABELPORT2"))
-        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
-        response += printer_response;
+        """
+            printer_address = os.getenv("BIGLABELID1")
+            printer_port = int(os.getenv("BIGLABELPORT1"))
+            printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+            response += printer_response;
+            printer_address = os.getenv("BIGLABELID2")
+            printer_port = int(os.getenv("BIGLABELPORT2"))
+            printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+            response += printer_response;
+        """
+
         printer_address = os.getenv("BIGLABELID3")
         printer_port = int(os.getenv("BIGLABELPORT3"))
-        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
-        response += printer_response;
-
-        return "response"
+        printer_response = label_printer_connection(label_structures, printer_address, printer_port)
+        # response += printer_response;
+        response = printer_response;
+        return response
 
     except Exception as ex:
-        print("Pallet label could not be created due to: \n", ex)
+        print("Pallet label structure could not be uploaded due to: \n", ex)
 
 async def format_and_print_pallet_label(pallet_id, printer_id):
     try:

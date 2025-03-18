@@ -9,7 +9,7 @@ def label_printer_connection(zpl_string, printer_address, printer_port):
 		label =  zpl_string.encode(encoding="ascii",errors="ignore")
 
 		# creating the socket connection and sending the data to the printer
-		mysocket = socket.socket(socket.af_inet,socket.sock_stream)
+		mysocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		mysocket.connect((printer_address, printer_port)) #connecting to host
 		mysocket.send(label) #using bytes
 		mysocket.close () #closing connection
