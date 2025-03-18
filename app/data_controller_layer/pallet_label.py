@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-async def format_and_print_pallet_label(pallet_id, printer_id ):
+async def format_and_print_pallet_label(pallet_id, printer_id):
     try:
         # setting the printer variables if no printer is stated use default/3rd printer
         if printer_id == "s":
