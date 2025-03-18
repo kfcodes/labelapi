@@ -1,5 +1,5 @@
-# from physical_layer.data_access_layer.read_database_functions import get_label_data, read_to_list_index
-# from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
+from db_access_layer.read_database_functions import read_to_list_index
+from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
 # from physical_layer.data_access_layer.write_database_functions import update_pallet
 
@@ -54,8 +54,13 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
 
         # get the label summary information and type id from the database
         label_summary_info = read_to_list_index(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
+        label_summary_info = label_summary_info[0]
+        print(label_summary_info)
+
         # label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
         label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
+        label_type_id = f"{label_type_id[0]['pallet_label_name']}"
+        label_type_id = "PAL1"
 
         # blank label with pallet summary
         if label_type_id == 2:
@@ -68,16 +73,17 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
             extra_info = standard_pallet_label_extra_information(pallet_id)
 
         # create the zpl string with the pallet information
-        # pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
+        pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
+        print(pallet_label_zpl)
 
         # send the zpl string with the printer info to the print function
-        # response = print_zpl_label(pallet_label_zpl, printer_address, printer_port)
+        response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
 
         """
         update_pallet(id);
         """
         # return response
-        return "response"
+        return response
 
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)
@@ -102,9 +108,9 @@ async def print_combined_pallet_label(data):
 def standard_pallet_label_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
-    return pallet_contents;
+    return pallet_contents[0];
 
 def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
-    return pallet_contents;
+    return pallet_contents[0];
