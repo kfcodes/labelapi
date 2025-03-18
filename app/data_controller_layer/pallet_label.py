@@ -1,11 +1,25 @@
-from physical_layer.data_access_layer.read_database_functions import get_label_data, read_to_list_index
-from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
-from business_logic_layer.external_module_controllers.print_logic.print_zpl import print_small_label, print_large_label, print_specific_label
-from physical_layer.data_access_layer.write_database_functions import update_pallet
+# from physical_layer.data_access_layer.read_database_functions import get_label_data, read_to_list_index
+# from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
+# from business_logic_layer.external_module_controllers.print_logic.print_zpl import print_small_label, print_large_label, print_specific_label
+# from physical_layer.data_access_layer.write_database_functions import update_pallet
 
 import os
 from dotenv import load_dotenv
 load_dotenv(".env")
+
+async def upload_pallet_label_data_to_printers():
+    try:
+        # load the label structures into variable
+        label_structure = str(f"{os.getenv('PALLETLABELTYPE')}")
+
+        # Loop over all printers and send the label information
+        # for each printer in printers;
+        #     send the label_structure
+
+        return "response"
+
+    except Exception as ex:
+        print("Pallet label could not be created due to: \n", ex)
 
 async def format_and_print_pallet_label(pallet_id, printer_id):
     try:
@@ -36,15 +50,16 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
             extra_info = standard_pallet_label_extra_information(pallet_id)
 
         # create the zpl string with the pallet information
-        pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
+        # pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
 
         # send the zpl string with the printer info to the print function
-        response = print_zpl_label(pallet_label_zpl, printer_address, printer_port)
+        # response = print_zpl_label(pallet_label_zpl, printer_address, printer_port)
 
         """
         update_pallet(id);
         """
-        return response
+        # return response
+        return "response"
 
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)

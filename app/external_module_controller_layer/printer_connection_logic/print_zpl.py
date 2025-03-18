@@ -3,10 +3,10 @@ import os
 from dotenv import load_dotenv
 load_dotenv(".env")
 
-def print_zpl_label(label_string, printer_address, printer_port):
+def label_printer_connection(zpl_string, printer_address, printer_port):
 	try:
 		# encoded label string
-		label =  label_string.encode(encoding="ascii",errors="ignore")
+		label =  zpl_string.encode(encoding="ascii",errors="ignore")
 
 		# creating the socket connection and sending the data to the printer
 		mysocket = socket.socket(socket.af_inet,socket.sock_stream)
@@ -14,7 +14,7 @@ def print_zpl_label(label_string, printer_address, printer_port):
 		mysocket.send(label) #using bytes
 		mysocket.close () #closing connection
 
-		return f"printed the pallet label on printer: {printer_address}, {printer_port}"
+		return f"{zpl_string}\n sent to printer: {printer_address}:{printer_port}"
 
 	except Exception as ex:
-		return str(f"could not print label on {printer_address}, port: {printer_port}due to the following: \n {ex}")
+		return f"could not send data to printer: {printer_address}:{printer_port} due to:\n {ex}"
