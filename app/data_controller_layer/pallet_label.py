@@ -1,6 +1,6 @@
 # from physical_layer.data_access_layer.read_database_functions import get_label_data, read_to_list_index
 # from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
-# from business_logic_layer.external_module_controllers.print_logic.print_zpl import print_small_label, print_large_label, print_specific_label
+from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
 # from physical_layer.data_access_layer.write_database_functions import update_pallet
 
 import os
@@ -10,11 +10,26 @@ load_dotenv(".env")
 async def upload_pallet_label_data_to_printers():
     try:
         # load the label structures into variable
-        label_structure = str(f"{os.getenv('PALLETLABELTYPE')}")
+        label_structure = str(f"{os.getenv('PALLETLABELSTRUCTURE')}")
 
         # Loop over all printers and send the label information
         # for each printer in printers;
         #     send the label_structure
+
+        response = ""
+        # for now just hardocoding the labelprinters
+        printer_address = os.getenv("BIGLABELID1")
+        printer_port = int(os.getenv("BIGLABELPORT1"))
+        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response += printer_response;
+        printer_address = os.getenv("BIGLABELID2")
+        printer_port = int(os.getenv("BIGLABELPORT2"))
+        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response += printer_response;
+        printer_address = os.getenv("BIGLABELID3")
+        printer_port = int(os.getenv("BIGLABELPORT3"))
+        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response += printer_response;
 
         return "response"
 
