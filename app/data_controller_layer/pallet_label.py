@@ -55,12 +55,13 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
         # get the label summary information and type id from the database
         label_summary_info = read_to_list_index(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
         label_summary_info = label_summary_info[0]
-        print(label_summary_info)
+        # print(label_summary_info)
 
         # label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
         label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
         label_type_id = f"{label_type_id[0]['pallet_label_name']}"
-        label_type_id = "PAL1"
+        # print(label_type_id)
+        label_type_id = "PALSTD1"
 
         # blank label with pallet summary
         if label_type_id == 2:
@@ -72,20 +73,20 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
         else:
             extra_info = standard_pallet_label_extra_information(pallet_id)
 
-        print(extra_info)
+        # print(len(extra_info))
         # create the zpl string with the pallet information
         pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
-        print(pallet_label_zpl)
+        # print(pallet_label_zpl)
 
         # send the zpl string with the printer info to the print function
-        # response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
 
         """
         update the pallet in the database to add it to packing list
         update_pallet(id);
         """
 
-        return "response"
+        return response
 
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)
@@ -110,7 +111,8 @@ async def print_combined_pallet_label(data):
 def standard_pallet_label_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
-    return type(pallet_contents);
+    pallet_contents = tuple(pallet_contents.values())
+    return pallet_contents;
 
 def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     # get the pallet item information from DB

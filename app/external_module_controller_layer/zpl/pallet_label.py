@@ -41,24 +41,32 @@ def add_products_to_label(pallet_products):
                     """
         # if less than 6 distict items apply the pallet item information to the label
         else:
-            for key, product in pallet_products.items():
+            key = 0;
+            for product in pallet_products:
                 position = 0
                 if(key == 0):
                     position = 410
                     print(product)
+                    key += 1
                 elif(key == 1):
                     position = 380
                     print(product)
+                    key += 1
                 elif(key == 2):
                     position = 350
+                    key += 1
                 elif(key == 3):
                     position = 320
+                    key += 1
                 elif(key == 4):
                     position = 290
+                    key += 1
                 elif(key == 5):
                     position = 260
+                    key += 1
                 elif(key == 6):
                     position = 230
+                    key += 1
 
                 # each iteration adds the value to the label information
                 zpl += f"""
