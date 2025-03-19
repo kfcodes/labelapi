@@ -3,7 +3,7 @@ from data_controller_layer.pallet_label import format_and_print_pallet_label, up
 
 pallet_label_router = APIRouter();
 
-@pallet_label_router.post("/upload_pallet_labels")
+@pallet_label_router.post("/sync_printers")
 async def upload_pallet_labels():
     response = await upload_pallet_label_data_to_printers();
     return response
