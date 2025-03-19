@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from data_controller_layer.pallet_label import format_and_print_pallet_label, upload_pallet_label_data_to_printers
+from data_controller_layer.pallet_label import main_pallet_label_function, upload_pallet_label_data_to_printers
 
 pallet_label_router = APIRouter();
 
@@ -9,8 +9,8 @@ async def upload_pallet_labels():
     return response
 
 @pallet_label_router.get("/pallet_label/{pallet_id}/{printer_id}")
-async def print_pallet_label_function_function(pallet_id: int, printer_id: str):
-    response = await format_and_print_pallet_label(pallet_id, printer_id);
+async def print_pallet_label(pallet_id: int, printer_id: str):
+    response = await main_pallet_label_function(pallet_id, printer_id);
     return response
 
 """

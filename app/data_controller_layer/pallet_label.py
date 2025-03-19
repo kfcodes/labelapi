@@ -1,5 +1,5 @@
 from db_access_layer.read_db import read_db
-from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
+from external_module_controller_layer.zpl_logic.pallet_label import create_pallet_label_zpl
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
 from db_access_layer.write_db import update_pallet_packing_list
 
@@ -36,7 +36,7 @@ async def upload_pallet_label_data_to_printers():
     except Exception as ex:
         print("Pallet label structure could not be uploaded due to: \n", ex)
 
-async def format_and_print_pallet_label(pallet_id, printer_id):
+async def main_pallet_label_function(pallet_id, printer_id):
     try:
         # setting the printer variables if no printer is stated use default/3rd printer
         if printer_id == "s":
@@ -50,12 +50,12 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
             printer_port = int(os.getenv("L2SP"))
 
         # get the label summary information and type id from the database
-        label_summary_info = read_to_list_index(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
+        label_summary_info = read_db(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
         label_summary_info = label_summary_info[0]
         # print(label_summary_info)
 
         # label_type_info = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
-        label_type_info = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
+        label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
         label_structure_name = f"{label_type_info[0]['pallet_label_name']}"
         # print(label_type_info)
         # setting the label structure statically for now
