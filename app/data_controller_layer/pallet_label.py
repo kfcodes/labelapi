@@ -1,7 +1,7 @@
-from db_access_layer.read_database_functions import read_to_list_index
+from db_access_layer.read_db import read_db
 from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
-from db_access_layer.write_database_functions import update_pallet_packing_list
+from db_access_layer.write_db import update_pallet_packing_list
 
 import os
 from dotenv import load_dotenv
@@ -40,14 +40,14 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
     try:
         # setting the printer variables if no printer is stated use default/3rd printer
         if printer_id == "s":
-            printer_address = os.getenv("BIGLABELID1")
-            printer_port = int(os.getenv("BIGLABELPORT1"))
+            printer_address = os.getenv("L1SID")
+            printer_port = int(os.getenv("L1SP"))
         if printer_id == "c":
-            printer_address = os.getenv("BIGLABELID2")
-            printer_port = int(os.getenv("BIGLABELPORT2"))
+            printer_address = os.getenv("L1CID")
+            printer_port = int(os.getenv("L1CP"))
         else:
-            printer_address = os.getenv("BIGLABELID3")
-            printer_port = int(os.getenv("BIGLABELPORT3"))
+            printer_address = os.getenv("L2SID")
+            printer_port = int(os.getenv("L2SP"))
 
         # get the label summary information and type id from the database
         label_summary_info = read_to_list_index(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
@@ -62,10 +62,10 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
         label_structure_name = "PALSTD1"
 
         # blank label with pallet summary
-        if label_type_info[0][''] == 2:
+        if int(label_type_info[0]['pallet_label_id']) == 2:
             return;
         # standard label with pallet contents containing product sku codes
-        if label_type_info == 3:
+        if int(label_type_info[0]['pallet_label_id']) == 3:
             extra_info = standard_pallet_label_with_product_skus_extra_information(pallet_id)
         # standard label structure with the pallet contents on the label
         else:
@@ -113,4 +113,5 @@ def standard_pallet_label_extra_information(pallet_id):
 def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
+    pallet_contents = tuple(pallet_contents.values())
     return [pallet_contents];
