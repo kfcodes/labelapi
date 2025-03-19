@@ -1,7 +1,7 @@
 from db_access_layer.read_database_functions import read_to_list_index
 from external_module_controller_layer.zpl.pallet_label import create_pallet_label_zpl
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
-# from physical_layer.data_access_layer.write_database_functions import update_pallet
+from db_access_layer.write_database_functions import update_pallet_packing_list
 
 import os
 from dotenv import load_dotenv
@@ -18,22 +18,19 @@ async def upload_pallet_label_data_to_printers():
 
         response = ""
         # for now just hardocoding the labelprinters
-        """
-            printer_address = os.getenv("BIGLABELID1")
-            printer_port = int(os.getenv("BIGLABELPORT1"))
-            printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
-            response += printer_response;
-            printer_address = os.getenv("BIGLABELID2")
-            printer_port = int(os.getenv("BIGLABELPORT2"))
-            printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
-            response += printer_response;
-        """
-
-        printer_address = os.getenv("BIGLABELID3")
-        printer_port = int(os.getenv("BIGLABELPORT3"))
+        printer_address = os.getenv("L1SID")
+        printer_port = int(os.getenv("L1SP"))
+        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response += printer_response;
+        printer_address = os.getenv("L1CID")
+        printer_port = int(os.getenv("L1CP"))
+        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        response += printer_response;
+        printer_address = os.getenv("L2SID")
+        printer_port = int(os.getenv("L2SP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        # response += printer_response;
-        response = printer_response;
+        response += printer_response;
+
         return response
 
     except Exception as ex:
@@ -57,17 +54,18 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
         label_summary_info = label_summary_info[0]
         # print(label_summary_info)
 
-        # label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
-        label_type_id = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        label_type_id = f"{label_type_id[0]['pallet_label_name']}"
-        # print(label_type_id)
-        label_type_id = "PALSTD1"
+        # label_type_info = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}").format(int(pallet_id)))
+        label_type_info = read_to_list_index(str(f"{os.getenv('PALLETLABELTYPE')}"))
+        label_structure_name = f"{label_type_info[0]['pallet_label_name']}"
+        # print(label_type_info)
+        # setting the label structure statically for now
+        label_structure_name = "PALSTD1"
 
         # blank label with pallet summary
-        if label_type_id == 2:
+        if label_type_info[0][''] == 2:
             return;
         # standard label with pallet contents containing product sku codes
-        if label_type_id == 3:
+        if label_type_info == 3:
             extra_info = standard_pallet_label_with_product_skus_extra_information(pallet_id)
         # standard label structure with the pallet contents on the label
         else:
@@ -75,16 +73,14 @@ async def format_and_print_pallet_label(pallet_id, printer_id):
 
         # print(len(extra_info))
         # create the zpl string with the pallet information
-        pallet_label_zpl = create_pallet_label_zpl(label_type_id, label_summary_info, extra_info)
+        pallet_label_zpl = create_pallet_label_zpl(label_structure_name, label_summary_info, extra_info)
         # print(pallet_label_zpl)
 
         # send the zpl string with the printer info to the print function
         response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
 
-        """
-        update the pallet in the database to add it to packing list
-        update_pallet(id);
-        """
+        # update the pallet in the database to add it to packing list
+        update_pallet_packing_list(id);
 
         return response
 
