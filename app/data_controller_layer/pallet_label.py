@@ -20,11 +20,11 @@ async def upload_pallet_label_data_to_printers():
         # for now just hardocoding the labelprinters
         printer_address = os.getenv("L1SID")
         printer_port = int(os.getenv("L1SP"))
-        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        printer_response = label_printer_connection(label_structures, printer_address, printer_port)
         response += printer_response;
         printer_address = os.getenv("L1CID")
         printer_port = int(os.getenv("L1CP"))
-        printer_response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
+        printer_response = label_printer_connection(label_structures, printer_address, printer_port)
         response += printer_response;
         printer_address = os.getenv("L2SID")
         printer_port = int(os.getenv("L2SP"))
@@ -36,7 +36,7 @@ async def upload_pallet_label_data_to_printers():
     except Exception as ex:
         print("Pallet label structure could not be uploaded due to: \n", ex)
 
-async def main_pallet_label_function(pallet_id, printer_id):
+async def main_pallet_label_function(printer_id, pallet_id):
     try:
         # setting the printer variables if no printer is stated use default/3rd printer
         if printer_id == "s":

@@ -3,14 +3,14 @@ from data_controller_layer.pallet_label import main_pallet_label_function, uploa
 
 pallet_label_router = APIRouter();
 
-@pallet_label_router.post("/sync_printers")
+@pallet_label_router.post("/sync_printer_templates")
 async def upload_pallet_labels():
     response = await upload_pallet_label_data_to_printers();
     return response
 
-@pallet_label_router.get("/pallet_label/{pallet_id}/{printer_id}")
-async def print_pallet_label(pallet_id: int, printer_id: str):
-    response = await main_pallet_label_function(pallet_id, printer_id);
+@pallet_label_router.get("/pallet_label/{printer_id}/{pallet_id}")
+async def print_pallet_label(printer_id: str, pallet_id: int):
+    response = await main_pallet_label_function(printer_id, pallet_id);
     return response
 
 """
