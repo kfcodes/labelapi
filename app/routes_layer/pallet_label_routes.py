@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from data_controller_layer.pallet_label import main_pallet_label_function, upload_pallet_label_data_to_printers
+from data_controller_layer.pallet_label_controller import main_pallet_label_function, upload_pallet_label_data_to_printers
 
 pallet_label_router = APIRouter();
 

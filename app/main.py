@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # pallet operations
-from routes_layer.pallet_label_routes import pallet_label_router
+from routes_layer import pallet_label_router  #, box_label_routes
 
 import os
 from dotenv import load_dotenv
@@ -20,3 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(pallet_label_router)
+# app.include_router(box_label_routes)
