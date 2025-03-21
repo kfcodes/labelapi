@@ -106,12 +106,12 @@ async def print_combined_pallet_label(data):
 # Supplementary functions
 def standard_pallet_label_extra_information(pallet_id):
     # get the pallet item information from DB
-    pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
+    pallet_contents = read_db(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
     pallet_contents = tuple(pallet_contents.values())
     return pallet_contents;
 
 def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     # get the pallet item information from DB
-    pallet_contents = read_to_list_index(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
+    pallet_contents = read_db(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
     pallet_contents = tuple(pallet_contents.values())
     return [pallet_contents];
