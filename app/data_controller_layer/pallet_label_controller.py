@@ -79,7 +79,7 @@ async def main_pallet_label_function(printer_id, pallet_id):
         response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
 
         # update the pallet in the database to add it to packing list
-        # update_pallet_packing_list(id);
+        update_pallet_packing_list(id);
 
         return response
 

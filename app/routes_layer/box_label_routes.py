@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Request
-from data_controller_layer.box_label_controller import main_box_label_function
+from data_controller_layer.box_label_controller import main_print_box_label_function, db_check_for_label, print_specific_label_now_2
 
 box_label_router = APIRouter();
 
-# check db - confirm label information is available
-@box_label_router.get("/label_info/{id}")
-async def label_info_function(id: str):
-    response = await get_label_info(id);
+# confirm label information is available
+@box_label_router.get("/box_label_check/{product_id}")
+async def box_label_check(product_id: str):
+    response = await db_check_for_label(product_id);
     return response
 
-# PRINT THE ACTUAL PALLET LABEL FOR THE PRODUCT BY ID
-@box_label_router.post("/print_product_label/{id}")
-async def product_label_function(id: int, body: Request):
+# print box pallet label for unique product
+@box_label_router.post("/print_box_label/{unique_item_id}")
+async def product_label(unique_item_id: int, body: Request):
     if body:
         body =  await body.json();
         quantity = int(body["qty"])
@@ -20,13 +20,13 @@ async def product_label_function(id: int, body: Request):
             quantity_in_a_box = 0;
         else:
             quantity_in_a_box = int(body["qtyPerBox"])
-        response = await print_large_product_label(id, quantity, quantity_in_a_box, exp);
+        response = await main_print_box_label_function(unique_item_id, quantity, quantity_in_a_box, exp);
         return response;
     else:
         return "Request Body cannot be empty"
 
-# TESING EXAMPLE FOR NEW PRODUCT LABELS
-@box_label_router.post("/new_product_labe/{id}")
-async def print_specific_label_function(id):
+# testing route for new label samples
+@box_label_router.post("/test_label_route}")
+async def test_label():
     response = await print_specific_label_now_2(id);
     return response;
