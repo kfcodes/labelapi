@@ -8,42 +8,34 @@ load_dotenv(".env")
 
 async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
     try:
-        label_info = read_db(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
-        label_type = int(label_info[0][f'{os.getenv("LABELFIELD20")}'])
-        label_info = label_info[0]
+        # Get the unique information from the db
+        unique_box_detals = read_db(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
+        unique_box_detals = unique_box_detals[0]
 
-        if label_type == 1:
-            outline = label_type_1.create_large_product_label_outline()
-            body = label_type_1.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            label_data = outline + body
-            response = print_large_label(label_data)
-
-        elif label_type == 2:
-            outline = label_type_2.create_large_product_label_outline()
-            body = label_type_2.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            label_data = outline + body
-            response = print_large_label(label_data)
-
-        elif label_type == 3:
-            outline = label_type_3.create_large_product_label_outline()
-            body = label_type_3.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            label_data = outline + body
-            response = print_large_label(label_data)
-
-        elif label_type == 4:
-            outline = label_type_4.create_large_product_label_outline()
-            body = label_type_4.create_large_product_label_data(label_info, quantity, quantity_in_a_box, exp)
-            label_data = outline + body
-            response = print_large_label(label_data)
-
-        elif label_type == 6:
-            body = label_type_6.create_large_product_label(label_info, quantity)
-            pprint.pp(body)
-            response = print_small_label(body)
+        # Determine which printer group to use
+        if printer_id == "c":
+            big_printer_id = os.getenv("L1LCID")
+            big_printer_com = int(os.getenv("L1LCP"))
+            small_printer_id = os.getenv("L1SCID")
+            small_printer_com = int(os.getenv("L1SCP"))
+        elif printer_id == "s":
+            big_printer_id = os.getenv("L1LSID")
+            big_printer_com = int(os.getenv("L1LSP"))
+            small_printer_id = os.getenv("L1SSID")
+            small_printer_com = int(os.getenv("L1SSP"))
         else:
-            response = {"message" : "No label Data for this label"}
+            print("using fallback printer")
+            big_printer_id = os.getenv("L2LSID")
+            big_printer_com = int(os.getenv("L2LSP"))
+            small_printer_id = os.getenv("L2SSID")
+            small_printer_com = int(os.getenv("L2SSP"))
 
-        return response
+            # modify the unique_box_detals to abstract the data being applied to the label
+
+        label_data_string = create_box_label_string(label_info, quantity, quantity_in_a_box, exp)
+        response = label_printer_connection(label_data_string, big_printer_id, big_printer_com)
+
+        return response;
 
     except Exception as ex:
         print("Data could not be processed: \n", ex)
