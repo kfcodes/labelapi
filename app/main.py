@@ -5,10 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # pallet operations
 from routes_layer import *
 
-import os
-from dotenv import load_dotenv
-load_dotenv(".env")
-
 app = FastAPI();
 
 app.add_middleware(
