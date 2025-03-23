@@ -108,6 +108,7 @@ def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_db(f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}")
     pallet_contents = tuple(pallet_contents.values())
+    return pallet_contents;
 
 async def upload_pallet_label_data_to_printers():
     try:
@@ -123,18 +124,16 @@ async def upload_pallet_label_data_to_printers():
         printer_address = os.getenv("L1SID")
         printer_port = int(os.getenv("L1SP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += printer_response;
+        response += "printer_response /n";
         printer_address = os.getenv("L1CID")
         printer_port = int(os.getenv("L1CP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += printer_response;
+        response += "printer_response /n";
         printer_address = os.getenv("L2SID")
         printer_port = int(os.getenv("L2SP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += printer_response;
+        response += "printer_response /n";
 
         return response
-
     except Exception as ex:
         print("Pallet label structure could not be uploaded due to: \n", ex)
-    return pallet_contents;
