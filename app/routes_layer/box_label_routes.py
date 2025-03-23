@@ -3,11 +3,11 @@ from data_controller_layer.box_label_controller import main_print_box_label_func
 
 box_label_router = APIRouter();
 
-# confirm label information is available
-@box_label_router.get("/box_label_check/{product_id}")
-async def box_label_check(product_id: str):
-    response = await db_check_for_label(product_id);
-    return response
+# testing route for new label samples
+@box_label_router.post("/test_label_route}")
+async def test_label():
+    response = await print_specific_label_now_2(id);
+    return response;
 
 # print box pallet label for unique product
 @box_label_router.post("/print_box_label/{unique_item_id}")
@@ -25,8 +25,13 @@ async def product_label(unique_item_id: int, body: Request):
     else:
         return "Request Body cannot be empty"
 
-# testing route for new label samples
-@box_label_router.post("/test_label_route}")
-async def test_label():
-    response = await print_specific_label_now_2(id);
-    return response;
+# confirm label information is available
+@box_label_router.get("/box_label_check/{product_id}")
+async def box_label_check(product_id: str):
+    response = await db_check_for_label(product_id);
+    return response
+
+@box_label_router.post("/sync_box_label_templates")
+async def upload_pallet_labels():
+    response = await upload_box_label_data_to_printers();
+    return response

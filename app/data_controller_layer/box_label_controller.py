@@ -4,13 +4,12 @@ from external_module_controller_layer.printer_connection_logic.zpl_printer_logic
 
 import os
 from dotenv import load_dotenv
-load_dotenv(".env")
+load_dotenv("env/box_label.env")
 
 async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
     try:
-        # Get the unique information from the db
-        unique_box_detals = read_db(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
-        unique_box_detals = unique_box_detals[0]
+        # Get the unique information from the db including the label structure name
+        unique_box_detals = unique_box_detals[0] = read_db(f"{os.getenv('PRODUCTIONLABELINFO')}{id}")
 
         # Determine which printer group to use
         if printer_id == "c":
@@ -30,10 +29,10 @@ async def print_large_product_label(id, quantity, quantity_in_a_box, exp):
             small_printer_id = os.getenv("L2SSID")
             small_printer_com = int(os.getenv("L2SSP"))
 
-            # modify the unique_box_detals to abstract the data being applied to the label
-
-        label_data_string = create_box_label_string(label_info, quantity, quantity_in_a_box, exp)
-        response = label_printer_connection(label_data_string, big_printer_id, big_printer_com)
+        # modify the unique_box_detals to abstract the data being applied to the label
+        # This function determines which printer to use big/small and label structure
+        label_data_string = create_box_label_string(label_info, printer_id, printer_com quantity, quantity_in_a_box, exp)
+        response = label_printer_connection(label_data_string, printer_id, printer_com)
 
         return response;
 
