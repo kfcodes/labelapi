@@ -1,5 +1,5 @@
 from db_access_layer.read_db import read_db
-from external_module_controller_layer.zpl_logic.pallet_label import create_box_label_zpl
+from external_module_controller_layer.zpl_logic.box_label_zpl_logic import create_box_label_zpl
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
 
 import os
