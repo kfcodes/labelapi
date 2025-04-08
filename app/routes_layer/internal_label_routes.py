@@ -8,3 +8,9 @@ internal_label_router = APIRouter();
 async def print_this_label_function(qty: int):
     response = await print_this_label(qty);
     return response;
+
+@internal_label_router.post("/blank_pallet_labels/{printer_id}")
+async def print_blank_label(printer_id: str):
+    response = await print_blank_pallet_labels(printer_id);
+    return response;
+

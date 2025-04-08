@@ -8,11 +8,6 @@ async def print_pallet_label(printer_id: str, pallet_id: int):
     response = await main_pallet_label_function(printer_id, pallet_id);
     return response
 
-@pallet_label_router.post("/blank_pallet_label/{printer_id}")
-async def print_blank_label(printer_id: str):
-    response = await print_blank_pallet_labels(printer_id);
-    return response;
-
 @pallet_label_router.post("/stacked_pallet_label/{printer_id}")
 async def print_large_combined_label_function(data: Request, printer_id: str):
     json_data =  await data.json();

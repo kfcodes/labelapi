@@ -33,7 +33,7 @@ async def main_pallet_label_function(printer_id, pallet_id):
 
         # blank label with pallet summary
         if int(label_type_info[0]['pallet_label_id']) == 2:
-            return;
+            return
         # standard label with pallet contents containing product sku codes
         if int(label_type_info[0]['pallet_label_id']) == 3:
             extra_info = standard_pallet_label_with_product_skus_extra_information(pallet_id)
@@ -48,7 +48,7 @@ async def main_pallet_label_function(printer_id, pallet_id):
         response = label_printer_connection(pallet_label_zpl, printer_address, printer_port)
 
         # update the pallet in the database to add it to packing list
-        update_pallet_packing_list(pallet_id);
+        update_pallet_packing_list(pallet_id)
 
         return response
 
@@ -91,8 +91,8 @@ async def print_combined_pallet_label(data, printer_id):
             printer_address = os.getenv("L2SID")
             printer_port = int(os.getenv("L2SP"))
 
-        label_info = str(data["label_info"])
-        response = print_large_label(label_info)
+        label_zpl = create_pallet_label_zpl(label_structure_name)
+        response = label_printer_connection(label_zpl, printer_address, printer_port)
         return response
     except Exception as ex:
         print("Data could not be processed: \n", ex)
@@ -124,15 +124,18 @@ async def upload_pallet_label_data_to_printers():
         printer_address = os.getenv("L1SID")
         printer_port = int(os.getenv("L1SP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += "printer_response /n";
+        response += "printer_response /n"
+        response += "/n"
         printer_address = os.getenv("L1CID")
         printer_port = int(os.getenv("L1CP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += "printer_response /n";
+        response += "printer_response /n"
+        response += "/n"
         printer_address = os.getenv("L2SID")
         printer_port = int(os.getenv("L2SP"))
         printer_response = label_printer_connection(label_structures, printer_address, printer_port)
-        response += "printer_response /n";
+        response += "printer_response /n"
+        response += "/n"
 
         return response
     except Exception as ex:
