@@ -41,41 +41,19 @@ async def main_pallet_label_function(printer, pallet_id):
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)
 
-async def print_blank_pallet_labels(printer_id):
+async def print_blank_pallet_labels(printer):
     try:
-        # setting the printer variables if no printer is stated use default/3rd printer
-        if printer_id == "c":
-            printer_address = os.getenv("L1CID")
-            printer_port = int(os.getenv("L1CP"))
-        elif printer_id == "s":
-            printer_address = os.getenv("L1SID")
-            printer_port = int(os.getenv("L1SP"))
-        else:
-            print("using else printer")
-            printer_address = os.getenv("L2SID")
-            printer_port = int(os.getenv("L2SP"))
         label_structure_name = "PALBLNK"
-        label_zpl = create_pallet_label_zpl(label_structure_name)
-        response = label_printer_connection(label_zpl, printer_address, printer_port)
+        pallet_label_zpl = create_pallet_label_zpl(label_structure_name)
+        response = label_printer_connection(pallet_label_zpl, printer['ip'] , printer['port'] )
         return response
     except Exception as ex:
         print("Data could not be processed: \n", ex)
 
-async def print_combined_pallet_label(data, printer_id):
+async def print_combined_pallet_label(data, printer):
     try:
-        # setting the printer variables if no printer is stated use default/3rd printer
-        if printer_id == "c":
-            printer_address = os.getenv("L1CID")
-            printer_port = int(os.getenv("L1CP"))
-        elif printer_id == "s":
-            printer_address = os.getenv("L1SID")
-            printer_port = int(os.getenv("L1SP"))
-        else:
-            print("using else printer")
-            printer_address = os.getenv("L2SID")
-            printer_port = int(os.getenv("L2SP"))
-        label_zpl = create_pallet_label_zpl(label_structure_name)
-        response = label_printer_connection(label_zpl, printer_address, printer_port)
+        pallet_label_zpl = create_pallet_label_zpl(label_structure_name)
+        response = label_printer_connection(pallet_label_zpl, printer['ip'] , printer['port'] )
         return response
     except Exception as ex:
         print("Data could not be processed: \n", ex)
@@ -100,7 +78,6 @@ async def upload_pallet_label_data_to_printers(printers):
         for printer in printers:
             printer_ip = printer["ip"]
             printer_port = printer["port"]
-
             printer_response = label_printer_connection(stored_label_structures, printer_ip, printer_port)
             response += f"{printer_response}\n\n"
         return response
