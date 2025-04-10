@@ -1,71 +1,106 @@
 import json
-import ipaddress  # for IP validation
+import ipaddress
 from typing import Dict
 from pathlib import Path
-import socket
+from fastapi import Request
+from .printer_controller import resolve_site_from_request  # Adjust if needed
 
-# In-memory printer config
-printers_by_site: Dict[str, Dict[str, Dict[str, dict]]] = {}
+# In-memory store of all label printers loaded at startup
+# Format: site -> line -> role (large/small) -> {"ip": str, "port": int}
+label_printers_full_list: Dict[str, Dict[str, Dict[str, dict]]] = {}
 
+# Load all printers from JSON file into memory
 def load_printers_from_file(path: str = "env/printers.json"):
-    global printers_by_site
+    global label_printers_full_list
     file_path = Path(path)
-    print(f"🔍 Checking file path: {file_path.resolve()}")
 
     if not file_path.exists():
         raise FileNotFoundError(f"Printer config file not found: {file_path}")
 
     with open(file_path, "r") as f:
         contents = f.read().strip()
-        print(f"📄 File contents:\n{contents}")
         if not contents:
             raise ValueError("Printer config file is empty")
-        printers_by_site = json.loads(contents)
 
-def get_printer(site: str, line: str, use_large: bool = True) -> dict:
-    if site not in printers_by_site:
-        raise ValueError(f"Site '{site}' not found")
-    if line not in printers_by_site[site]:
-        raise ValueError(f"Line '{line}' not found in site '{site}'")
+        try:
+            label_printers_full_list = json.loads(contents)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid printer config JSON: {e}")
 
-    role = "large" if use_large else "small"
-    return printers_by_site[site][line][role]
+# Validate printer entry has a correct IP and port
+def validate_printer_connection(printer: dict) -> dict | None:
+    ip = printer.get("ip")
+    port = printer.get("port")
 
-def get_site_printers(site: str) -> Dict[str, Dict[str, dict]]:
-    return printers_by_site.get(site, {})
+    if not ip or not isinstance(port, int):
+        return None
 
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        return None
 
-def get_all_printer_ips_ports() -> list:
-    """
-    Returns a list of all valid printer IP:port pairs.
-    Skips any printers with missing or invalid data.
-    """
+    return {"ip": ip, "port": port}
+
+# Return a flat list of all valid printer connections (across all sites)
+def get_all_printer_connections() -> list:
     results = []
     roles = ("large", "small")
 
-    for site, lines in printers_by_site.items():
+    for site, lines in label_printers_full_list.items():
         for line, printer_roles in lines.items():
             for role in roles:
                 printer = printer_roles.get(role)
                 if not printer:
                     continue
 
-                ip = printer.get("ip")
-                port = printer.get("port")
-
-                # Validate structure
-                if not ip or not isinstance(port, int):
-                    print(f"⚠️ Skipping printer (missing/invalid data): {printer}")
-                    continue
-
-                # Optional: Validate IP format
-                try:
-                    ipaddress.ip_address(ip)
-                except ValueError:
-                    print(f"⚠️ Skipping printer (invalid IP): {ip}")
-                    continue
-
-                results.append({"ip": ip, "port": port})
+                connection = validate_printer_connection(printer)
+                if connection:
+                    results.append(connection)
 
     return results
 
+# Return grouped printers for a specific site
+def get_printers_for_site(site: str) -> dict:
+    """
+    Returns a dict of printers for the specified site, grouped by line and role.
+    Format:
+    {
+        "line1": {
+            "large": {"ip": "...", "port": ...},
+            "small": {"ip": "...", "port": ...}
+        },
+        ...
+    }
+    """
+    site_data = label_printers_full_list.get(site)
+    if not site_data:
+        raise ValueError(f"Site '{site}' not found")
+
+    printers_by_line = {}
+
+    for line_name, roles in site_data.items():
+        line_printers = {}
+
+        for role in ("large", "small"):
+            printer = roles.get(role)
+            if not printer:
+                continue
+
+            connection = validate_printer_connection(printer)
+            if connection:
+                line_printers[role] = connection
+
+        if line_printers:
+            printers_by_line[line_name] = line_printers
+
+    return printers_by_line
+
+# Main access function: resolves site from request and returns its printers
+async def get_printers_on_site(request: Request) -> dict:
+    """
+    Determines the site from the caller's IP and returns all printers
+    available on that site, grouped by line and role.
+    """
+    site = await resolve_site_from_request(request)
+    return get_printers_for_site(site)
