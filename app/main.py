@@ -1,11 +1,8 @@
-# fastapi imports
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# pallet operations
 from routes_layer import *
 
-app = FastAPI();
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,4 +13,5 @@ app.add_middleware(
 )
 
 app.include_router(pallet_label_router)
+app.include_router(printer_controller_router)
 # app.include_router(box_label_routes)
