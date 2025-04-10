@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from data_controller_layer.printer_controller import *
 
-printer_controller_router = APIRouter();
+printer_controller_router = APIRouter()
 
 @printer_controller_router.on_event("startup")
 def startup():
