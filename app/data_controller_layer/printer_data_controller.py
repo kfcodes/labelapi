@@ -91,18 +91,44 @@ def get_printers_for_site(site: str) -> dict:
         raise ValueError(f"Site '{site}' not found")
 
     result = {}
+
     for line_name, roles in site_data.items():
+        if line_name == "misc":
+            continue  # skip misc for this function
+
         line_printers = {}
         for role in ("large", "small"):
             printer = roles.get(role)
             connection = validate_printer_connection(printer) if printer else None
             if connection:
                 line_printers[role] = connection
+
         if line_printers:
             result[line_name] = line_printers
+
     return result
 
 # ✅ Main route-level access: get printers based on request IP's resolved site
 async def get_printers_on_site(request: Request) -> dict:
     site = await resolve_site_from_request(request)
     return get_printers_for_site(site)
+
+# Get the pallet label printer for the resolved site
+async def get_pallet_label_printer(request: Request) -> dict:
+    """
+    Returns the pallet label printer details for the resolved site.
+    """
+    site = await resolve_site_from_request(request)
+    site_data = label_printers_full_list.get(site)
+
+    if not site_data:
+        raise ValueError(f"Site '{site}' not found in printer config")
+
+    misc = site_data.get("misc", {})
+    printer = misc.get("pallet_label_printer")
+
+    connection = validate_printer_connection(printer) if printer else None
+    if not connection:
+        raise ValueError(f"Pallet label printer not found or invalid for site '{site}'")
+
+    return connection
