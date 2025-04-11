@@ -10,7 +10,7 @@ def create_pallet_label_zpl(label_type, label_summary_info = None, extra_info = 
             format_extras = ""
 
         if label_summary_info != None:
-            pallet_information = """
+            pallet_information = f"""
             ^FN1^FD{label_summary_info['pallet_id']}^FS
             ^FN2^FD{int(label_summary_info['pallet_quantity'])}^FS
             ^FN3^FD{label_summary_info['gross_weight']}^FS

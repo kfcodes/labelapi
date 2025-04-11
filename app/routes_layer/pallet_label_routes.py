@@ -6,10 +6,8 @@ pallet_label_router = APIRouter()
 
 @pallet_label_router.get("/pallet_label/{pallet_id}")
 async def print_pallet_label(pallet_id: int, request: Request):
-    printer = await get_pallet_label_printer(request)
-    print(printer)
-    print(pallet_id)
-    response = await main_pallet_label_function(printer, pallet_id)
+    printer, site = await get_pallet_label_printer(request)
+    response = await main_pallet_label_function(site, printer, pallet_id)
     return response
 
 @pallet_label_router.post("/stacked_pallet_label")

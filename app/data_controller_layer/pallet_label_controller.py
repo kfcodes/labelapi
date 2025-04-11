@@ -1,15 +1,13 @@
 from db_access_layer.read_db import *
 from external_module_controller_layer.zpl_logic.pallet_label_zpl_logic import *
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
-from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
 from db_access_layer.write_db import update_pallet_packing_list
-from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
 
 import os
 from dotenv import load_dotenv
 load_dotenv("env/pallet_label.env")
 
-async def main_pallet_label_function(printer, pallet_id):
+async def main_pallet_label_function(location, printer, pallet_id):
     try:
         # get the label summary information and type id from the database
         label_summary_info = read_db(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))
@@ -36,7 +34,8 @@ async def main_pallet_label_function(printer, pallet_id):
         response = label_printer_connection(pallet_label_zpl, printer['ip'] , printer['port'] )
 
         # update the pallet in the database to add it to packing list
-        # update_pallet_packing_list(pallet_id, site)
+        print(location)
+        update_pallet_packing_list(pallet_id, location)
         return response
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)

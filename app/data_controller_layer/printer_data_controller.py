@@ -131,4 +131,4 @@ async def get_pallet_label_printer(request: Request) -> dict:
     if not connection:
         raise ValueError(f"Pallet label printer not found or invalid for site '{site}'")
 
-    return connection
+    return connection, site
