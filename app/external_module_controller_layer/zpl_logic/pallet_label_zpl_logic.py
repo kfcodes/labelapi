@@ -11,21 +11,16 @@ def create_pallet_label_zpl(label_type, label_summary_info = None, extra_info = 
 
         if label_summary_info != None:
             pallet_information = f"""
-            ^FN1^FD{label_summary_info['pallet_id']}^FS
-            ^FN2^FD{int(label_summary_info['pallet_quantity'])}^FS
-            ^FN3^FD{label_summary_info['gross_weight']}^FS
-            ^FN4^FD{label_summary_info['pallet_dimensions']}^FS
-            {format_extras}
-            """
+^FN1^FD{label_summary_info['pallet_id']}^FS
+^FN2^FD{int(label_summary_info['pallet_quantity'])}^FS
+^FN3^FD{label_summary_info['gross_weight']}^FS
+^FN4^FD{label_summary_info['pallet_dimensions']}^FS
+{format_extras}"""
         else:
             pallet_information = ""
 
         # get pallet structure name then apply the applicable variables
-        zpl = f"""
-       ^XA
-       ^XFE:{label_type}.ZPL^FS
-       {pallet_information}
-       ^XZ"""
+        zpl = f"""^XA^XFE:{label_type}.ZPL^FS{pallet_information}^XZ"""
 
         # then make the label string with the XA and XZ commands
         return(zpl)
@@ -40,16 +35,10 @@ def add_products_to_label(pallet_products):
 
         # if the pallet has more than 6 items apply "mixed pallet" value to label
         if((len(pallet_products))>7):
-            zpl += f"""
-                    ^FO350,420
-                    ^A0,22
-                    ^FDMIXED PALLET
-                    ^FS
-                    \n
-                    """
+            zpl += "^FO350,420^A0,22^FDMIXED PALLET^FS"
         # if less than 6 distict items apply the pallet item information to the label
         else:
-            key = 0;
+            key = 0
             for product in pallet_products:
                 position = 0
                 if(key == 0):
@@ -78,16 +67,10 @@ def add_products_to_label(pallet_products):
 
                 # each iteration adds the value to the label information
                 zpl += f"""
-                        ^FO{position},420
-                        ^A0,22
-                        ^FD{int(product['total'])}
-                        ^FS
-                        ^FO{position},480^A0,22
-                        ^FD{product['product_description']}
-                        ^FS\n
-                    """
+^FO{position},420^A0,22^FD{int(product['total'])}^FS
+^FO{position},480^A0,22^FD{product['product_description']}^FS"""
             # apply new line at the end of the zpl string after the loop
-            zpl += f"\n"
+            zpl += ""
 
         # return the full zpl string to the calling function
         return(zpl)

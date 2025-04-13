@@ -30,11 +30,11 @@ async def main_pallet_label_function(location, printer, pallet_id):
 
         # create the zpl string with the pallet information
         pallet_label_zpl = create_pallet_label_zpl(label_structure_name, label_summary_info, extra_info)
+        print(pallet_label_zpl)
         # send the zpl string with the printer info to the print function
         response = label_printer_connection(pallet_label_zpl, printer['ip'] , printer['port'] )
 
         # update the pallet in the database to add it to packing list
-        print(location)
         update_pallet_packing_list(pallet_id, location)
         return response
     except Exception as ex:
