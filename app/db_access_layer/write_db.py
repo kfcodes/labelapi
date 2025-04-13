@@ -1,13 +1,15 @@
 from db_access_layer.db_connection import db
 
-def update_pallet_packing_list(id):
+def update_pallet_packing_list(palletid, site):
     try:
-        print(f"palleid passed to function: {id}")
+        print(f"palleid passed to function: {palletid}")
+        print(f"site passed to function: {site}")
+        print(f"Call UpdateOrInsertPackingList({palletid},'{str(site)}')")
         connection = db().raw_connection()
         cursor = connection.cursor()
-        cursor.execute(f'Call UpdateOrInsertPackingList({id})');
+        cursor.execute(f"Call UpdateOrInsertPackingList({palletid},'{str(site)}')")
         cursor.close()
         connection.commit()
-        print("Called the stored function")
+        print("Called the stored function to create or set packing list")
     except Exception as ex:
         print("Connection could not be made due to the following error: \n", ex)
