@@ -25,9 +25,3 @@ async def box_label_check(product_id: str):
 async def test_label():
     response = await print_specific_label_now_2(id)
     return response
-
-# Sync the box label structures with the printers
-@box_label_router.post("/sync_box_label_templates")
-async def upload_pallet_labels():
-    response = await upload_box_label_data_to_printers()
-    return response

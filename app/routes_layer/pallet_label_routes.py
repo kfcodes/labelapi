@@ -16,9 +16,3 @@ async def print_large_combined_label_function(data: Request):
     printer = await get_pallet_label_printer(data)
     response = await print_combined_pallet_label(json_data, printer)
     return response
-
-@pallet_label_router.post("/sync_pallet_label_structures")
-async def upload_pallet_labels():
-    all_printers = get_all_printer_connections()
-    response = await upload_pallet_label_data_to_printers(all_printers)
-    return response
