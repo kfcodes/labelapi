@@ -5,5 +5,6 @@ from routes_layer.printer_data_routes import printer_controller_router
 router = APIRouter()
 
 # Prefixes can be added here, or in individual files
-router.include_router(pallet_label_router, prefix="/labels")
-router.include_router(printer_controller_router, prefix="/printers")
+# router.include_router(pallet_label_router, prefix="/labels")
+router.include_router(pallet_label_router)
+router.include_router(printer_controller_router)
