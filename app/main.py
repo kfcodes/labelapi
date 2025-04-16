@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes_layer import *
+from routes_layer import router
 
 app = FastAPI()
 
@@ -12,6 +12,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(pallet_label_router)
-app.include_router(printer_controller_router)
-# app.include_router(box_label_routes)
+app.include_router(router)
