@@ -8,9 +8,6 @@ box_label_variables: Dict[str, int] = {}
 pallet_label_variables: Dict[str, int] = {}
 
 def load_json_file(path: str, error_context: str = "config", print_output: bool = False) -> dict:
-    """
-    General-purpose JSON loader with basic error handling.
-    """
     file_path = Path(path)
     if not file_path.exists():
         raise FileNotFoundError(f"{error_context.title()} file not found: {file_path}")
@@ -35,17 +32,17 @@ def load_site_ip_ranges(path: str = "env/site_ip_ranges.json"):
     global site_ip_ranges
     site_ip_ranges = load_json_file(path, error_context="site IP ranges", print_output=True)
 
-# def load_box_label_variables(path: str = "env/box_label_zpl_variables.json"):
-#     global box_label_variables
-#     box_label_variables = load_json_file(path, error_context="box ZPL variable map", print_output=True)
+def load_box_label_variables(path: str = "env/box_label_zpl_variables.json"):
+    global box_label_variables
+    box_label_variables = load_json_file(path, error_context="box ZPL variable map", print_output=True)
 
-# def load_pallet_label_variables(path: str = "env/pallet_label_zpl_variables.json"):
-#     global pallet_label_variables
-#     pallet_label_variables = load_json_file(path, error_context="pallet ZPL variable map", print_output=True)
+def load_pallet_label_variables(path: str = "env/pallet_label_zpl_variables.json"):
+    global pallet_label_variables
+    pallet_label_variables = load_json_file(path, error_context="pallet ZPL variable map", print_output=True)
 
+# Main function to load all json data into global variables
 def load_all_config_data():
     load_printers_from_file()
     load_site_ip_ranges()
-    # load_box_label_variables()
-    # load_pallet_label_variables()
-
+    load_box_label_variables()
+    load_pallet_label_variables()
