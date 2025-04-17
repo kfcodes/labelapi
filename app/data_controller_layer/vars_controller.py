@@ -18,8 +18,10 @@ def load_json_file(path: str, error_context: str = "config", print_output: bool 
 
     try:
         data = json.loads(contents)
+        # Serialize to a JSON-formatted str with indentation
+        print_data = json.dumps(data, indent=4, sort_keys=True)
         if print_output:
-            print(f"[{error_context}] Loaded from {path}:\n{data}")
+            print(f"[{error_context}] Loaded from {path}:\n{print_data}")
         return data
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid {error_context} JSON in {path}: {e}")
