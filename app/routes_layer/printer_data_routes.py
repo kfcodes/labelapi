@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from data_controller_layer.printer_data_controller import get_all_printer_connections
 from data_controller_layer.pallet_label_controller import upload_pallet_label_data_to_printers
 from data_controller_layer.box_label_controller import upload_box_label_structures_to_printers
-from data_controller_layer.vars_controller import load_all_config_data, load_box_label_variables
+from data_controller_layer.json_controller import load_all_config_data, load_box_label_variables
 
 printer_controller_router = APIRouter()
 
