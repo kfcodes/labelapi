@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv(".env")
 
 def create_pallet_label_zpl(label_type, label_summary_info = None, extra_info = None):

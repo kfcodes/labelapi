@@ -1,5 +1,6 @@
 import socket
 
+
 def label_printer_connection(zpl_string: str, printer_address: str, printer_port: int) -> dict:
     try:
         label = zpl_string.encode(encoding="ascii", errors="ignore")
