@@ -1,7 +1,10 @@
 import ipaddress
 from typing import Dict, List, Optional
+
+from data_controller_layer.json_controller import (label_printers_full_list,
+                                                   site_ip_ranges)
 from fastapi import Request
-from data_controller_layer.json_controller import label_printers_full_list, site_ip_ranges
+
 
 # Validate a printer entry has a correct IP and port
 def validate_printer_connection(printer: dict) -> Optional[dict]:
@@ -16,21 +19,26 @@ def validate_printer_connection(printer: dict) -> Optional[dict]:
         return None
     return {"ip": ip, "port": port}
 
+
 # Check if an IP falls within a start/end IP range
 def ip_in_range(ip: str, start: str, end: str) -> bool:
     ip_val = ipaddress.ip_address(ip)
     return ipaddress.ip_address(start) <= ip_val <= ip_val <= ipaddress.ip_address(end)
 
+
 # Resolve site from request IP using site_ip_ranges
 async def resolve_site_from_request(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
-    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else request.client.host
+    client_ip = (
+        forwarded_for.split(",")[0].strip() if forwarded_for else request.client.host
+    )
 
     for site, range_data in site_ip_ranges.items():
         if ip_in_range(client_ip, range_data["start"], range_data["end"]):
             return site
 
     raise ValueError(f"No site mapping found for IP: {client_ip}")
+
 
 # Return all valid printer IP/port pairs
 def get_all_printer_connections() -> List[dict]:
@@ -42,6 +50,7 @@ def get_all_printer_connections() -> List[dict]:
                 if connection:
                     results.append(connection)
     return results
+
 
 # Return printers for a specific site, grouped by line and role
 def get_printers_for_site(site: str) -> dict:
@@ -66,10 +75,12 @@ def get_printers_for_site(site: str) -> dict:
 
     return result
 
+
 # Main route-level access: get printers based on request IP's resolved site
 async def get_printers_on_site(request: Request) -> dict:
     site = await resolve_site_from_request(request)
     return get_printers_for_site(site)
+
 
 # Get the pallet label printer for the resolved site
 async def get_pallet_label_printer(request: Request) -> dict:

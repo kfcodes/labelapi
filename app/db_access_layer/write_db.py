@@ -1,5 +1,6 @@
 from db_access_layer.db_connection import db
 
+
 def update_pallet_packing_list(palletid, site):
     try:
         print(f"palleid passed to function: {palletid}")

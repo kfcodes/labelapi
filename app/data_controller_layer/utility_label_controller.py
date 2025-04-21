@@ -1,8 +1,6 @@
-from physical_layer.data_access_layer.read_database_functions import get_label_data, read_to_list_index
-from business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.small_type_1_box_label import create_small_label_data,  create_small_label_outline
-from business_logic_layer.external_module_controllers.zpl_logic.pallet_logic.generic_pallet_label import create_pallet_label_outline, create_pallet_label_data, add_products_to_label
-from business_logic_layer.external_module_controllers.zpl_logic.internal_logic.internal_pallet_label import create_blank_label_outline
-from business_logic_layer.external_module_controllers.print_logic.print_zpl import print_small_label, print_large_label, print_specific_label
+import os
+import pprint
+
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.large_type_1_box_label as label_type_1
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.large_type_2_box_label as label_type_2
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.large_type_3_box_label as label_type_3
@@ -12,21 +10,33 @@ import business_logic_layer.external_module_controllers.zpl_logic.product_box_lo
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.small_type_2_box_label as type_2_label
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.small_type_3_box_label as type_3_label
 import business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.small_type_4_box_label as type_4_label
-import pprint
-from physical_layer.data_access_layer.write_database_functions import update_pallet
-
-import os
+from business_logic_layer.external_module_controllers.print_logic.print_zpl import (
+    print_large_label, print_small_label, print_specific_label)
+from business_logic_layer.external_module_controllers.zpl_logic.internal_logic.internal_pallet_label import \
+    create_blank_label_outline
+from business_logic_layer.external_module_controllers.zpl_logic.pallet_logic.generic_pallet_label import (
+    add_products_to_label, create_pallet_label_data,
+    create_pallet_label_outline)
+from business_logic_layer.external_module_controllers.zpl_logic.product_box_logic.small_type_1_box_label import (
+    create_small_label_data, create_small_label_outline)
 from dotenv import load_dotenv
+from physical_layer.data_access_layer.read_database_functions import (
+    get_label_data, read_to_list_index)
+from physical_layer.data_access_layer.write_database_functions import \
+    update_pallet
+
 load_dotenv(".env")
+
 
 async def get_label_info(id):
     try:
-        label_info_list = [];
-        label_info = get_label_data(f"{os.getenv('GETLABELINFO')}'{id}'");
-        label_info_list.append(label_info[0]);
-        return label_info_list;
+        label_info_list = []
+        label_info = get_label_data(f"{os.getenv('GETLABELINFO')}'{id}'")
+        label_info_list.append(label_info[0])
+        return label_info_list
     except Exception as ex:
         print("Data could not be processed: \n", ex)
+
 
 async def print_this_label(qty):
     try:
@@ -41,6 +51,7 @@ async def print_this_label(qty):
     except Exception as ex:
         print("Data could not be processed: \n", ex)
 
+
 async def print_specific_label_now():
     try:
         label_outline = f"""
@@ -52,6 +63,7 @@ async def print_specific_label_now():
         return response
     except Exception as ex:
         print("Data could not be processed: \n", ex)
+
 
 # THIS IS THE FUNCTION TO PRINT THE NEW PRODUCT LABELS
 async def print_specific_label_now_2(id):
