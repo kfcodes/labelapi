@@ -77,6 +77,8 @@ def get_label_variables(label_type: str = "box") -> Dict[str, str]:
         return box_label_variables
     elif label_type == "pallet":
         return pallet_label_variables
+    # elif label_type == "other":
+    #     return other_label_variables
     else:
         raise ValueError(f"Unsupported label type: {label_type}. Use 'box' or 'pallet'.")
 
@@ -85,9 +87,6 @@ def get_label_variables(label_type: str = "box") -> Dict[str, str]:
 # ---------------------------------------
 
 def load_all_config_data():
-    """
-    Loads all JSON config data into memory.
-    """
     load_printers_from_file()
     load_site_ip_ranges()
     load_box_label_variables()
