@@ -5,7 +5,8 @@ from typing import Dict, Union
 
 from db_access_layer.read_db import read_db
 from dotenv import load_dotenv
-from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import label_printer_connection
+from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import \
+    label_printer_connection
 from external_module_controller_layer.zpl_logic.box_label_zpl_logic import \
     create_box_label_zpl
 
@@ -15,9 +16,7 @@ load_dotenv("env/box_label.env")
 async def main_print_box_label_function(unique_id, quantity, printer):
     try:
         # Get the unique information from the db including the label structure name
-        box_label_info = read_db(
-            f"{os.getenv('PRODUCTIONLABELINFO')}{unique_id}"
-        )
+        box_label_info = read_db(f"{os.getenv('PRODUCTIONLABELINFO')}{unique_id}")
         box_label_info = box_label_info[0]
         # This function determines which printer to use big/small and label structure
         zpl_string = create_box_label_zpl(box_label_info, quantity)
