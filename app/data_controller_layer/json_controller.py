@@ -59,7 +59,7 @@ def load_site_ip_ranges(path: str = "env/site_ip_ranges.json") -> Dict:
     return site_ip_ranges
 
 
-def load_box_label_variables(path: str = "env/box_label_zpl_variables.json") -> Dict:
+def load_box_label_variables(path: str = "env/box_vars.json") -> Dict:
     global box_label_variables
     box_label_variables = load_json_file(
         path, error_context="box ZPL variable map", print_output=True
@@ -68,7 +68,7 @@ def load_box_label_variables(path: str = "env/box_label_zpl_variables.json") -> 
 
 
 def load_pallet_label_variables(
-    path: str = "env/pallet_label_zpl_variables.json",
+    path: str = "env/pallet_vars.json",
 ) -> Dict:
     global pallet_label_variables
     pallet_label_variables = load_json_file(

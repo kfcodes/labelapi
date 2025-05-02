@@ -1,5 +1,6 @@
-from data_controller_layer.utility_label_controller import *
 from fastapi import APIRouter, Request
+
+from data_controller_layer.utility_label_controller import *
 
 utility_label_router = APIRouter()
 

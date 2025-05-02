@@ -1,6 +1,7 @@
+from fastapi import APIRouter, Request
+
 from data_controller_layer.box_label_controller import *
 from data_controller_layer.printer_data_controller import *
-from fastapi import APIRouter, Request
 
 box_label_router = APIRouter()
 

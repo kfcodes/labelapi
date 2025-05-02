@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from routes_layer.pallet_label_routes import pallet_label_router
 from routes_layer.printer_data_routes import printer_controller_router
 

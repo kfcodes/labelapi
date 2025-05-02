@@ -3,8 +3,10 @@ import re
 from pathlib import Path
 from typing import Dict, Union
 
-from db_access_layer.read_db import read_db
 from dotenv import load_dotenv
+
+from data_controller_layer.json_controller import load_box_label_variables
+from db_access_layer.read_db import read_db
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import \
     label_printer_connection
 from external_module_controller_layer.zpl_logic.box_label_zpl_logic import \
@@ -34,12 +36,13 @@ async def main_print_box_label_function(unique_id, quantity, printer):
         print("Data could not be processed: \n", ex)
 
 
-async def upload_box_label_structures_to_printers(printers, load_box_label_variables):
+async def upload_box_label_structures_to_printers(printers):
     try:
         # Load and compile templates
         template_zpl = load_label_template_from_env(print_output=True)
+        box_label_variables = load_box_label_variables()
         compiled_template_zpl = apply_zpl_placeholders(
-            template_zpl, load_box_label_variables, print_output=True
+            template_zpl, box_label_variables, print_output=True
         )
 
         # TEMP: return compiled for preview

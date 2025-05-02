@@ -1,8 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+
 from db_access_layer.read_db import *
 from db_access_layer.write_db import update_pallet_packing_list
-from dotenv import load_dotenv
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
 from external_module_controller_layer.zpl_logic.pallet_label_zpl_logic import *
 
@@ -65,6 +66,7 @@ async def print_blank_pallet_labels(printer):
 
 async def print_combined_pallet_label(data, printer):
     try:
+        # Format the data then pass it to the function
         pallet_label_zpl = create_pallet_label_zpl(label_structure_name)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]

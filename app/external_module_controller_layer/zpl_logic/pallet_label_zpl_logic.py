@@ -7,23 +7,25 @@ load_dotenv(".env")
 
 def create_pallet_label_zpl(label_type, label_summary_info=None, extra_info=None):
     try:
-        if extra_info != None:
-            format_extras = add_products_to_label(extra_info)
-        else:
-            format_extras = ""
+        pallet_info = ""
+        extra_label_data = ""
+        if extra_info is not None:
+            extra_label_data = add_products_to_label(extra_info)
 
-        if label_summary_info != None:
-            pallet_information = f"""
+        if label_summary_info is not None:
+
+            pallet_info = f"""
+^XA^XFE:{label_type}.ZPL^FS{pallet_info}^XZ
 ^FN1^FD{label_summary_info['pallet_id']}^FS
 ^FN2^FD{int(label_summary_info['pallet_quantity'])}^FS
 ^FN3^FD{label_summary_info['gross_weight']}^FS
 ^FN4^FD{label_summary_info['pallet_dimensions']}^FS
-{format_extras}"""
-        else:
-            pallet_information = ""
+^FN5^FD{label_summary_info['combo_pallet_ids']}^FS
+^FN6^FD{label_summary_info['gross_weight']}^FS
+^FN7^FD{label_summary_info['gross_dimensions']}^FS
+{extra_label_data}"""
 
         # get pallet structure name then apply the applicable variables
-        zpl = f"""^XA^XFE:{label_type}.ZPL^FS{pallet_information}^XZ"""
 
         # then make the label string with the XA and XZ commands
         return zpl
