@@ -64,16 +64,29 @@ async def print_blank_pallet_labels(printer):
         print("Data could not be processed: \n", ex)
 
 
-async def print_combined_pallet_label(data, printer):
+async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list):
     try:
-        # Format the data then pass it to the function
-        pallet_label_zpl = create_pallet_label_zpl(label_structure_name)
+        # Write the update to the DB
+        update_pallets_response = read_db(str(os.getenv('COMBINEPALLETDATA')).format(pallet_id, height, pallet_list))
+        print(update_pallets_response)
+
+        # Format ID's for the pallets being combined
+        ids = str(pallet_list)
+        ids = ids.replace("(","")
+        ids = ids.replace(")","")
+        ids = ids.replace("'","")
+
+        # Get the combined pallet details from the DB
+        combined_pallet_data = read_to_list_index(str(os.getenv('GETCOMBINEDPALLETDATA')).format(pallet_id))
+        combo_pallet_label_zpl = create_combined_pallet_label_data(combined_pallet_data[0], ids)
+
         response = label_printer_connection(
-            pallet_label_zpl, printer["ip"], printer["port"]
+            combo_pallet_label_zpl, printer["ip"], printer["port"]
         )
         return response
     except Exception as ex:
         print("Data could not be processed: \n", ex)
+
 
 
 # Supplementary functions

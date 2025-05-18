@@ -15,9 +15,14 @@ async def print_pallet_label(pallet_id: int, request: Request):
     return response
 
 
-@pallet_label_router.post("/stacked_pallet_label")
-async def print_large_combined_label_function(data: Request):
-    json_data = await data.json()
-    printer = await get_pallet_label_printer(data)
-    response = await print_combined_pallet_label(json_data, printer)
-    return response
+@pallet_label_router.put("/combine_pallets")
+async def print_combined_pallet_label(body: Request):
+    if body:
+        body =  await body.json();
+        pallet_id = int(max(body["pallet_list"]))
+        pallet_list = tuple(body["pallet_list"])
+        height = int(body["height"])
+        response = await generate_and_print_combo_label(printer, pallet_id, height, pallet_list)
+        return response
+    else:
+        return "Request Body cannot be empty"
