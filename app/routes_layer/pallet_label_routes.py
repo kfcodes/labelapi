@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Request
-
 from data_controller_layer.pallet_label_controller import *
 from data_controller_layer.printer_data_controller import \
     get_pallet_label_printer
+from fastapi import APIRouter, Request
 
 pallet_label_router = APIRouter()
 
