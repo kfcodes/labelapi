@@ -1,4 +1,6 @@
+import json
 import os
+import pathlib
 
 from db_access_layer.read_db import *
 from db_access_layer.write_db import update_pallet_packing_list
@@ -114,14 +116,16 @@ def standard_pallet_label_with_product_skus_extra_information(pallet_id):
 
 async def upload_pallet_label_data_to_printers(printers):
     try:
-        stored_label_structures = str(f"{os.getenv('PALLETLABELSTRUCTURES')}")
+        stored_label_structures = json.loads(pathlib.Path("labels.json").read_text())
+        zpl = {
+            k: "".join(v)
+            for k, v in stored_label_structures["PALLETLABELSTRUCTURES"].items()
+        }
         response = ""
         for printer in printers:
             printer_ip = printer["ip"]
             printer_port = printer["port"]
-            printer_response = label_printer_connection(
-                stored_label_structures, printer_ip, printer_port
-            )
+            printer_response = label_printer_connection(zpl, printer_ip, printer_port)
             response += f"{printer_response}\n\n"
         return response
     except Exception as ex:
