@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-
 from routes_layer.internal_label_routes import internal_label_router
 from routes_layer.label_utility_routes import label_utility_router
 from routes_layer.pallet_label_routes import pallet_label_router
