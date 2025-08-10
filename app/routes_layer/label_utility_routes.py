@@ -1,12 +1,14 @@
-from data_controller_layer.box_label_controller import \
-    upload_box_label_structures_to_printers
-from data_controller_layer.json_controller import load_all_config_data
-from data_controller_layer.pallet_label_controller import \
-    upload_pallet_label_data_to_printers
-from data_controller_layer.printer_data_controller import \
-    get_all_printer_connections
-from data_controller_layer.utility_label_controller import *
 from fastapi import APIRouter
+
+from data_controller_layer.box_label_controller import (
+    upload_box_label_structures_to_printers,
+)
+from data_controller_layer.json_controller import load_all_config_data
+from data_controller_layer.pallet_label_controller import (
+    upload_pallet_label_data_to_printers,
+)
+from data_controller_layer.printer_data_controller import get_all_printer_connections
+from data_controller_layer.utility_label_controller import *
 
 label_utility_router = APIRouter()
 

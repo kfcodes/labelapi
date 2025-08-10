@@ -115,5 +115,5 @@ def get_label_variables(label_type: str = "box") -> Dict[str, str]:
 def load_all_config_data():
     load_printers_from_file()
     load_site_ip_ranges()
-    load_box_label_variables()
-    load_pallet_label_variables()
+    # load_box_label_variables()
+    # load_pallet_label_variables()
