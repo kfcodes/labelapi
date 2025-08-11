@@ -2,6 +2,9 @@ import json
 
 from fastapi import APIRouter, Request
 
+from data_controller_layer.internal_label_controller import *
+from data_controller_layer.printer_data_controller import get_pallet_label_printer
+
 # from business_logic_layer.data_controller_layer.label_controllers.print_label_controllers import (
 #     get_label_info,
 #     print_blank_pallet_label,
@@ -38,6 +41,10 @@ async def print_blank_label(request: Request):
         body = await request.json()
     except Exception:
         body = {}
-    # response = await print_blank_pallet_labels(printer_id)
+    # printer, site = await get_pallet_label_printer(request)
+    # response = await blend_label_function(site, printer, body)
+
+    response = await blend_label_function(body)
+
     print("Recieved", body)
     return {"Recieved": body}
