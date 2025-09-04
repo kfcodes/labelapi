@@ -1,9 +1,8 @@
 import json
 
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
-from external_module_controller_layer.zpl_logic.internal_label_zpl_logic import (
-    create_blend_label_zpl,
-)
+from external_module_controller_layer.zpl_logic.internal_label_zpl_logic import \
+    create_blend_label_zpl
 
 
 # async def blend_label_function(site,printer, body):
