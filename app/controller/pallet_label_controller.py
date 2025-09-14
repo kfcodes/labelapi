@@ -2,11 +2,11 @@ import json
 import os
 import pathlib
 
-from db_access_layer.read_db import *
-from db_access_layer.write_db import update_pallet_packing_list
+from database.read_db import *
+from database.write_db import update_pallet_packing_list
 from dotenv import load_dotenv
-from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import *
-from external_module_controller_layer.zpl_logic.pallet_label_zpl_logic import *
+from external_modules.printer_connection_logic.zpl_printer_logic import *
+from external_modules.zpl_logic.pallet_label_zpl_logic import *
 
 load_dotenv("env/pallet_label.env")
 
