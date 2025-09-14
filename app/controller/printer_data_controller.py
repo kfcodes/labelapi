@@ -1,10 +1,9 @@
 import ipaddress
 from typing import Dict, List, Optional
 
-from fastapi import Request
-
 from data_controller_layer.json_controller import (label_printers_full_list,
                                                    site_ip_ranges)
+from fastapi import Request
 
 
 # Validate a printer entry has a correct IP and port

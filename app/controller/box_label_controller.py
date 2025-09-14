@@ -3,10 +3,9 @@ import re
 from pathlib import Path
 from typing import Dict, Union
 
-from dotenv import load_dotenv
-
 from data_controller_layer.json_controller import load_box_label_variables
 from db_access_layer.read_db import read_db
+from dotenv import load_dotenv
 from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import \
     label_printer_connection
 from external_module_controller_layer.zpl_logic.box_label_zpl_logic import \
