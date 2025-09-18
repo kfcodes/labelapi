@@ -1,13 +1,28 @@
-import os
-
+# app/database/read_db.py
 import pandas as pd
-from db_access_layer.db_connection import db
+from app.database.db_connection import db
 
 
-def read_db(selection):
+def read_db(selection: str):
+    """
+    Returns a dict indexed by row number -> row dict
+    (matches existing callers that do .values()).
+    """
     try:
         info = pd.read_sql(selection, db())
-        values = info.to_dict(orient="index")
-        return values
+        return info.to_dict(orient="index")
     except Exception as ex:
-        print("Connection could not be made due to the following error: \n", ex)
+        print("DB read failed:\n", ex)
+        raise
+
+
+def read_to_list_index(selection: str):
+    """
+    Returns a list[dict] (records). Existing code does result[0] afterward.
+    """
+    try:
+        info = pd.read_sql(selection, db())
+        return info.to_dict(orient="records")
+    except Exception as ex:
+        print("DB read (records) failed:\n", ex)
+        raise

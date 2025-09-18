@@ -1,16 +1,18 @@
-from db_access_layer.db_connection import db
+# app/database/write_db.py
+from app.database.db_connection import db
 
 
-def update_pallet_packing_list(palletid, site):
+def update_pallet_packing_list(palletid: int, site: str) -> None:
+    """
+    Calls stored procedure UpdateOrInsertPackingList(palletid, site).
+    """
     try:
-        print(f"palleid passed to function: {palletid}")
-        print(f"site passed to function: {site}")
-        print(f"Call UpdateOrInsertPackingList({palletid},'{str(site)}')")
         connection = db().raw_connection()
         cursor = connection.cursor()
-        cursor.execute(f"Call UpdateOrInsertPackingList({palletid},'{str(site)}')")
+        cursor.execute(f"Call UpdateOrInsertPackingList({int(palletid)},'{str(site)}')")
         cursor.close()
         connection.commit()
-        print("Called the stored function to create or set packing list")
+        print("Called stored procedure UpdateOrInsertPackingList")
     except Exception as ex:
-        print("Connection could not be made due to the following error: \n", ex)
+        print("DB write failed:\n", ex)
+        raise
