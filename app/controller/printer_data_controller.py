@@ -1,8 +1,7 @@
 import ipaddress
 from typing import Dict, List, Optional
 
-from data_controller_layer.json_controller import (label_printers_full_list,
-                                                   site_ip_ranges)
+from app.controller.json_controller import label_printers_full_list, site_ip_ranges
 from fastapi import Request
 
 

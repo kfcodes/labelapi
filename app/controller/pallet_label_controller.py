@@ -1,14 +1,22 @@
 import json
 import os
 import pathlib
+from pathlib import Path
 
-from database.read_db import *
-from database.write_db import update_pallet_packing_list
+from app.database.read_db import read_db, read_to_list_index
+from app.database.write_db import update_pallet_packing_list
+from app.external_modules.printer_connection_logic.zpl_printer_logic import (
+    label_printer_connection,
+)
+from app.external_modules.zpl_logic.pallet_label_zpl_logic import (
+    create_combined_pallet_label_data,
+    create_pallet_label_zpl,
+)
 from dotenv import load_dotenv
-from external_modules.printer_connection_logic.zpl_printer_logic import *
-from external_modules.zpl_logic.pallet_label_zpl_logic import *
 
-load_dotenv("env/pallet_label.env")
+# load .env from app/env/ (robust path)
+BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
+load_dotenv(BASE_DIR / "env" / "pallet_label.env")
 
 
 async def main_pallet_label_function(location, printer, pallet_id):

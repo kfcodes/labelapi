@@ -3,15 +3,17 @@ import re
 from pathlib import Path
 from typing import Dict, Union
 
-from data_controller_layer.json_controller import load_box_label_variables
-from db_access_layer.read_db import read_db
+from app.controller.json_controller import load_box_label_variables
+from app.database.read_db import read_db
+from app.external_modules.printer_connection_logic.zpl_printer_logic import (
+    label_printer_connection,
+)
+from app.external_modules.zpl_logic.box_label_zpl_logic import create_box_label_zpl
 from dotenv import load_dotenv
-from external_module_controller_layer.printer_connection_logic.zpl_printer_logic import \
-    label_printer_connection
-from external_module_controller_layer.zpl_logic.box_label_zpl_logic import \
-    create_box_label_zpl
 
-load_dotenv("env/box_label.env")
+# load .env from app/env/ (robust path)
+BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
+load_dotenv(BASE_DIR / "env" / "box_label.env")
 
 
 async def main_print_box_label_function(unique_id, quantity, printer):
