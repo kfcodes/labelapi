@@ -1,24 +1,24 @@
-# app/controller/json_controller.py
 import json
 from pathlib import Path
 from typing import Dict
 
-# Resolve app/env no matter where the process is started from
-BASE_DIR = Path(__file__).resolve().parents[1]  # -> .../app
+BASE_DIR = Path(__file__).resolve().parents[1]
 ENV_DIR = BASE_DIR / "env"
 
-# -------------------------------
-# In-memory stores
-# -------------------------------
+"""
+    In-memory stores
+"""
 label_printers_full_list: Dict[str, Dict[str, Dict[str, dict]]] = {}
 site_ip_ranges: Dict[str, Dict[str, str]] = {}
 box_label_variables: Dict[str, str] = {}
 pallet_label_variables: Dict[str, str] = {}
 
 
-# -------------------------------
-# Generic JSON file loader
-# -------------------------------
+"""
+    Generic JSON file loader
+"""
+
+
 def load_json_file(
     path: str | Path, error_context: str = "config", print_output: bool = False
 ) -> dict:
@@ -53,9 +53,11 @@ def load_json_file(
         raise ValueError(f"Invalid {error_context} JSON in {file_path}: {e}")
 
 
-# -------------------------------
-# Specific loaders (defaults are absolute)
-# -------------------------------
+"""
+    Specific loaders (defaults are absolute)
+"""
+
+
 def load_printers_from_file(path: str | Path = ENV_DIR / "printers.json") -> Dict:
     global label_printers_full_list
     label_printers_full_list = load_json_file(
@@ -92,9 +94,11 @@ def load_pallet_label_variables(
     return pallet_label_variables
 
 
-# -------------------------------
-# Helper selector & bulk loader
-# -------------------------------
+"""
+    Helper selector & bulk loader
+"""
+
+
 def get_label_variables(label_type: str = "box") -> Dict[str, str]:
     if label_type == "box":
         return box_label_variables

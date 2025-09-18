@@ -14,7 +14,6 @@ from app.external_modules.zpl_logic.pallet_label_zpl_logic import (
 )
 from dotenv import load_dotenv
 
-# load .env from app/env/ (robust path)
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
 load_dotenv(BASE_DIR / "env" / "pallet_label.env")
 
@@ -103,7 +102,6 @@ async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list
         print("Data could not be processed: \n", ex)
 
 
-# Supplementary functions
 def standard_pallet_label_extra_information(pallet_id):
     # get the pallet item information from DB
     pallet_contents = read_db(

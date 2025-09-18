@@ -11,7 +11,6 @@ from app.external_modules.printer_connection_logic.zpl_printer_logic import (
 from app.external_modules.zpl_logic.box_label_zpl_logic import create_box_label_zpl
 from dotenv import load_dotenv
 
-# load .env from app/env/ (robust path)
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
 load_dotenv(BASE_DIR / "env" / "box_label.env")
 
