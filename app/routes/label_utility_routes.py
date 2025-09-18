@@ -1,43 +1,31 @@
-from data_controller_layer.box_label_controller import \
-    upload_box_label_structures_to_printers
-from data_controller_layer.json_controller import load_all_config_data
-from data_controller_layer.pallet_label_controller import \
-    upload_pallet_label_data_to_printers
-from data_controller_layer.printer_data_controller import \
-    get_all_printer_connections
-from data_controller_layer.utility_label_controller import *
-from fastapi import APIRouter
+from app.controller import (
+    get_all_printer_connections,
+    load_all_config_data,
+    upload_box_label_structures_to_printers,
+    upload_pallet_label_data_to_printers,
+)
+from fastapi import APIRouter, HTTPException
 
 label_utility_router = APIRouter()
 
 
 @label_utility_router.on_event("startup")
 def startup():
+    # Load printers, IP ranges, etc., into memory
     load_all_config_data()
 
 
-@label_utility_router.post("/sync_label_structures")
+@label_utility_router.post("/sync-label-structures")
 async def upload_label_structures_to_all_printers():
-    all_printers = get_all_printer_connections()
-    pallet_label_response = await upload_pallet_label_data_to_printers(all_printers)
-    box_label_response = await upload_box_label_structures_to_printers(all_printers)
-    return pallet_label_response, box_label_response
+    try:
+        all_printers = get_all_printer_connections()
+        pallet_label_response = await upload_pallet_label_data_to_printers(all_printers)
+        box_label_response = await upload_box_label_structures_to_printers(all_printers)
+        return {"pallet": pallet_label_response, "box": box_label_response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@label_utility_router.get("/this_way_up/{qty}")
-async def print_this_label_function(qty: int):
-    response = await print_this_label(qty)
-    return response
-
-
-@label_utility_router.post("/print_specific_label")
-async def print_specific_label_function():
-    response = await print_specific_label_now()
-    return response
-
-
-# testing route for new label samples
-@label_utility_router.post("/test_label_route")
-async def test_label():
-    response = await print_specific_label_now_2(id)
-    return response
+# The older utility endpoints referenced functions that aren’t implemented in your controllers.
+# If you need them, implement in app/controller/utility_label_controller.py and re-export via the facade.
+# For now, omit or keep placeholders that return 501 to avoid runtime errors.

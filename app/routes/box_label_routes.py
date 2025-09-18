@@ -1,26 +1,60 @@
-from data_controller_layer.box_label_controller import *
-from data_controller_layer.printer_data_controller import *
-from fastapi import APIRouter, Request
+from typing import Any, Dict
+
+from app.controller import (
+    get_printers_on_site,
+)  # we’ll derive the correct printer from the request/site
+from app.controller import main_print_box_label_function
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, ConfigDict, Field
 
 box_label_router = APIRouter()
 
 
-# print box pallet label for unique product
-@box_label_router.post("/print_box_label/{unique_finished_product_id}")
-async def product_label(unique_finished_product_id: int, body: Request):
-    if body:
-        body = await body.json()
-        quantity = int(body["quantity"])
-        printers_on_site = await get_box_label_printers(body)
-        response = await main_print_box_label_function(
-            unique_finished_product_id, body, quantity, printers_on_site
+class BoxLabelRequest(BaseModel):
+    quantity: int = Field(..., gt=0, description="Number of labels to print")
+    # Optional: choose a specific production line; else first available line is used
+    line: str | None = None
+    model_config = ConfigDict(extra="allow")
+
+
+@box_label_router.post("/print/{unique_finished_product_id}")
+async def print_box_label(
+    request: Request, unique_finished_product_id: int, body: BoxLabelRequest
+) -> Dict[str, Any]:
+    """
+    Print a box label. Chooses the printer pair (large/small) from site+line.
+    """
+    try:
+        # Get available printers for the resolved site
+        printers_by_line = await get_printers_on_site(request)
+        if not printers_by_line:
+            raise HTTPException(
+                status_code=404, detail="No printers configured for site"
+            )
+
+        # Pick a line (use requested line if valid, else first available)
+        selected = None
+        if body.line and body.line in printers_by_line:
+            selected = printers_by_line[body.line]
+        else:
+            # first non-empty line
+            selected = next(iter(printers_by_line.values()))
+
+        # Controller expects (unique_id, quantity, printer_dict)
+        resp = await main_print_box_label_function(
+            unique_finished_product_id,
+            body.quantity,
+            selected,  # must contain {"large": {...}, "small": {...}}
         )
-        return response
-    return "LABEL QUANTITY CANNONT BE EMPTY"
+        return {"status": "ok", "response": resp}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-# check for box label_data
-@box_label_router.get("/box_label_check/{product_id}")
+# Placeholder for the old “box_label_check” which doesn’t exist in controllers you shared.
+# Keep it returning 501 until you implement a real check.
+@box_label_router.get("/check/{product_id}")
 async def box_label_check(product_id: str):
-    response = await db_check_for_label(product_id)
-    return response
+    raise HTTPException(status_code=501, detail="box_label_check not implemented")
