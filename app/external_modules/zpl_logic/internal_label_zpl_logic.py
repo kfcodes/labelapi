@@ -1,13 +1,14 @@
-def create_blend_label_zpl(name, id, allergens):
-    try:
-        zpl = f"""
-new
-"""
-        print(name, id, allergens)
-
-        # get pallet structure name then apply the applicable variables
-
-        # then make the label string with the XA and XZ commands
-        return zpl
-    except Exception as ex:
-        print("Data could not be processed: \n", ex)
+def create_blend_label_zpl(
+    label_structure_name: str, blend_id: str | int, allergens: str
+) -> str:
+    """
+    Minimal internal label: references a stored template and fills a couple of fields.
+    Adjust ^FN numbers to match your template if needed.
+    """
+    return (
+        "^XA\n"
+        f"^XFE:{label_structure_name}.ZPL^FS\n"
+        f"^FN1^FD{blend_id}^FS\n"
+        f"^FN2^FD{allergens}^FS\n"
+        "^XZ"
+    )

@@ -1,57 +1,37 @@
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv(".env")
-from data_controller_layer.json_controller import box_label_variables
+from app.controller.json_controller import box_label_variables
 
 
 def create_box_label_zpl(label_data: dict, qty: int, debug: bool = False) -> str:
     """
-    Generates a ZPL string for a box label using a mapped set of field names (box_label_variables).
-
-    Args:
-        label_data (dict): Dictionary of label data (field_name: value)
-        qty (int): Number of labels to print
-        debug (bool): If True, logs missing fields and prints result
-
-    Returns:
-        str: Fully compiled ZPL label string
+    Generate a ZPL string for a box label using the global mapping (box_label_variables).
+    Assumes box_label_variables has been populated (e.g., via load_all_config_data()).
     """
     try:
         name = label_data.get("label_structure_name", "DEFAULT")
 
-        # Start ZPL
         zpl_lines = [
             "^XA",
-            f"^XFE:{name}.ZPL^FS",  # Template file reference
-            f"^PQ{qty},10,1,Y",  # Quantity and print settings
+            f"^XFE:{name}.ZPL^FS",  # Use stored template on printer
+            f"^PQ{int(qty)},10,1,Y",  # Quantity & reprint behavior
         ]
 
-        # Track missing fields if debugging
-        missing_fields = []
-
-        # Loop over field mappings
+        missing = []
         for field_name, fn_number_str in box_label_variables.items():
-            fn_number = int(fn_number_str)
-            field_value = label_data.get(field_name, "")
-
-            if field_value == "" and debug:
-                missing_fields.append(field_name)
-
-            zpl_lines.append(f"^FN{fn_number}^FD{field_value}^FS")
+            fn = int(fn_number_str)
+            value = label_data.get(field_name, "")
+            if value == "" and debug:
+                missing.append(field_name)
+            zpl_lines.append(f"^FN{fn}^FD{value}^FS")
 
         zpl_lines.append("^XZ")
 
         if debug:
-            if missing_fields:
-                print(f"[ZPL DEBUG] Missing values for fields: {missing_fields}")
+            if missing:
+                print(f"[ZPL DEBUG] Missing values for fields: {missing}")
             print("[ZPL DEBUG] Generated ZPL:\n" + "\n".join(zpl_lines))
 
         return "\n".join(zpl_lines)
-
     except Exception as e:
-        error_msg = f"[ZPL ERROR] Failed to generate label: {e}"
         if debug:
-            print(error_msg)
+            print(f"[ZPL ERROR] Failed to generate label: {e}")
         return ""

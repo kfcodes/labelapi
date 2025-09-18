@@ -1,84 +1,84 @@
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv(".env")
-
-
-def create_pallet_label_zpl(label_type, label_summary_info=None, extra_info=None):
+def create_pallet_label_zpl(
+    label_type: str,
+    label_summary_info: dict | None = None,
+    extra_info: list[dict] | None = None,
+) -> str:
+    """
+    Build a pallet label from a stored template and fill summary fields + optional products list.
+    Adjust ^FN numbers to match your actual printer template.
+    """
     try:
-        pallet_info = ""
-        extra_label_data = ""
+        zpl_lines = [
+            "^XA",
+            f"^XFE:{label_type}.ZPL^FS",
+        ]
+
+        if label_summary_info:
+            zpl_lines.extend(
+                [
+                    f"^FN1^FD{label_summary_info.get('pallet_id', '')}^FS",
+                    f"^FN2^FD{int(label_summary_info.get('pallet_quantity', 0))}^FS",
+                    f"^FN3^FD{label_summary_info.get('gross_weight', '')}^FS",
+                    f"^FN4^FD{label_summary_info.get('pallet_dimensions', '')}^FS",
+                    f"^FN5^FD{label_summary_info.get('combo_pallet_ids', '')}^FS",
+                    f"^FN6^FD{label_summary_info.get('gross_weight', '')}^FS",
+                    f"^FN7^FD{label_summary_info.get('gross_dimensions', '')}^FS",
+                ]
+            )
+
         if extra_info is not None:
-            extra_label_data = add_products_to_label(extra_info)
+            zpl_lines.append(add_products_to_label(extra_info))
 
-        if label_summary_info is not None:
-
-            pallet_info = f"""
-^XA^XFE:{label_type}.ZPL^FS{pallet_info}^XZ
-^FN1^FD{label_summary_info['pallet_id']}^FS
-^FN2^FD{int(label_summary_info['pallet_quantity'])}^FS
-^FN3^FD{label_summary_info['gross_weight']}^FS
-^FN4^FD{label_summary_info['pallet_dimensions']}^FS
-^FN5^FD{label_summary_info['combo_pallet_ids']}^FS
-^FN6^FD{label_summary_info['gross_weight']}^FS
-^FN7^FD{label_summary_info['gross_dimensions']}^FS
-{extra_label_data}"""
-
-        # get pallet structure name then apply the applicable variables
-
-        # then make the label string with the XA and XZ commands
-        return zpl
+        zpl_lines.append("^XZ")
+        return "\n".join(zpl_lines)
     except Exception as ex:
         print("Data could not be processed: \n", ex)
+        return ""
 
 
-def add_products_to_label(pallet_products):
+def create_combined_pallet_label_data(combined_summary: dict, combined_ids: str) -> str:
+    """
+    Simple combined pallet label that also prints the combined IDs.
+    Uses the same ^FN mappings as create_pallet_label_zpl and adds ^FN8 for IDs.
+    """
+    label_type = combined_summary.get("label_structure_name", "PALSTD1")
+    zpl_lines = [
+        "^XA",
+        f"^XFE:{label_type}.ZPL^FS",
+        f"^FN1^FD{combined_summary.get('pallet_id', '')}^FS",
+        f"^FN2^FD{int(combined_summary.get('pallet_quantity', 0))}^FS",
+        f"^FN3^FD{combined_summary.get('gross_weight', '')}^FS",
+        f"^FN4^FD{combined_summary.get('pallet_dimensions', '')}^FS",
+        f"^FN5^FD{combined_ids}^FS",  # combined IDs
+        f"^FN6^FD{combined_summary.get('gross_weight', '')}^FS",
+        f"^FN7^FD{combined_summary.get('gross_dimensions', '')}^FS",
+        "^XZ",
+    ]
+    return "\n".join(zpl_lines)
+
+
+def add_products_to_label(pallet_products: list[dict]) -> str:
+    """
+    Render the (up to) first 7 product lines onto the label body.
+    Adjust coordinates/text sizes to match your actual template.
+    """
     try:
-        # initialising zpl to an empty string
         zpl = ""
 
-        # if the pallet has more than 6 items apply "mixed pallet" value to label
-        if (len(pallet_products)) > 7:
+        # "More than 6" => mixed pallet
+        if len(pallet_products) > 6:
             zpl += "^FO350,420^A0,22^FDMIXED PALLET^FS"
-        # if less than 6 distict items apply the pallet item information to the label
         else:
-            key = 0
-            for product in pallet_products:
-                position = 0
-                if key == 0:
-                    position = 410
-                    print(product)
-                    key += 1
-                elif key == 1:
-                    position = 380
-                    print(product)
-                    key += 1
-                elif key == 2:
-                    position = 350
-                    key += 1
-                elif key == 3:
-                    position = 320
-                    key += 1
-                elif key == 4:
-                    position = 290
-                    key += 1
-                elif key == 5:
-                    position = 260
-                    key += 1
-                elif key == 6:
-                    position = 230
-                    key += 1
+            y_positions = [410, 380, 350, 320, 290, 260, 230]
+            for idx, product in enumerate(pallet_products[:7]):
+                y = y_positions[idx]
+                total = int(product.get("total", 0))
+                desc = product.get("product_description", "")
+                zpl += (
+                    f"\n^FO{y},420^A0,22^FD{total}^FS" f"\n^FO{y},480^A0,22^FD{desc}^FS"
+                )
 
-                # each iteration adds the value to the label information
-                zpl += f"""
-^FO{position},420^A0,22^FD{int(product['total'])}^FS
-^FO{position},480^A0,22^FD{product['product_description']}^FS"""
-            # apply new line at the end of the zpl string after the loop
-            zpl += ""
-
-        # return the full zpl string to the calling function
         return zpl
-
     except Exception as ex:
         print("Data could not be processed: \n", ex)
+        return ""
