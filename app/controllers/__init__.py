@@ -174,28 +174,78 @@ def load_all_config_data(
     """
     Back-compat bulk loader used by some apps at startup.
     Loads printers.json, then box & pallet label configs.
-    Set `verbose=True` to echo loaded JSON via print.
+    Set `verbose=True` to echo loaded JSON via print and a summary.
     """
     logger = print if verbose else None
 
-    # Printers (unified)
+    # --- Printers (unified) ---
     if printers_path is None:
         load_printers_config(logger=logger)
     else:
         load_printers_config(printers_path, logger=logger)
     _refresh_legacy_mirrors()
 
-    # Box labels
+    # --- Box labels ---
     if box_path is None:
         load_box_config(logger=logger)
     else:
         load_box_config(box_path, logger=logger)
 
-    # Pallet labels
+    # --- Pallet labels ---
     if pallet_path is None:
         load_pallet_config(logger=logger)
     else:
         load_pallet_config(pallet_path, logger=logger)
+
+    if not verbose:
+        return
+
+    # ---------- Pretty summary ----------
+    try:
+        ranges = get_site_ranges()
+        addrs = get_addresses()
+        total_sites_ranges = len(ranges)
+        total_sites_addrs = len(addrs)
+
+        # Count printers (dedup by ip:port)
+        from .printers import get_all_printer_connections
+
+        conns = get_all_printer_connections()
+        unique_conns = {(c["ip"], c["port"]) for c in conns}
+
+        print("\n=== CONFIG SUMMARY ====================================")
+        print(f"Printers:")
+        print(f"  Sites in Ranges   : {total_sites_ranges}")
+        print(f"  Sites in Addresses: {total_sites_addrs}")
+        print(f"  Total printers    : {len(conns)} (unique {len(unique_conns)})")
+
+        # Show a quick per-site overview
+        for site_id, lines in addrs.items():
+            line_names = list(lines.keys())
+            print(f"    - Site {site_id}: lines={line_names}")
+
+        # Box
+        box_vars = get_box_variables()
+        box_structs = list_box_label_names()
+        print("\nBox labels:")
+        print(f"  Variables count   : {len(box_vars)}")
+        print(
+            f"  Structures        : {', '.join(box_structs) if box_structs else '(none)'}"
+        )
+
+        # Pallet
+        pallet_vars = get_pallet_variables()
+        pallet_structs = list_pallet_label_names()
+        print("\nPallet labels:")
+        print(f"  Variables count   : {len(pallet_vars)}")
+        print(
+            f"  Structures        : {', '.join(pallet_structs) if pallet_structs else '(none)'}"
+        )
+        print("=======================================================\n")
+
+    except Exception as e:
+        # Never crash the app on summary printing
+        print(f"[load_all_config_data] Summary print failed: {e}")
 
 
 # --------------------------------------------------------------------

@@ -11,7 +11,7 @@ label_utility_router = APIRouter()
 
 @label_utility_router.on_event("startup")
 def startup():
-    load_all_config_data()
+    load_all_config_data(verbose=True)
 
 
 @label_utility_router.post("/sync_label_structures")
