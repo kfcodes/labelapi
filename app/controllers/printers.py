@@ -1,3 +1,4 @@
+# app/controllers/printers.py
 from __future__ import annotations
 
 import ipaddress
@@ -5,7 +6,8 @@ from typing import Dict, Iterable, List, Mapping, Optional, Tuple, TypedDict
 
 from fastapi import Request
 
-from app.controllers.json_readers import label_printers_full_list, site_ip_ranges
+# NEW: use the unified printers config accessors
+from .printer_json_readers import get_addresses_for_site, get_site_ranges
 
 
 class PrinterConn(TypedDict):
@@ -34,7 +36,7 @@ def validate_printer_connection(
     Validate a printer entry has a correct IP and port.
     Returns a normalized dict {'ip': str, 'port': int} or None if invalid.
     """
-    if not printer:
+    if not isinstance(printer, Mapping):
         return None
 
     ip = printer.get("ip")
@@ -62,14 +64,14 @@ def ip_in_range(ip: str, start: str, end: str) -> bool:
     return start_val <= ip_val <= end_val
 
 
-async def resolve_site_from_request(request: Request) -> str:
+async def resolve_site_id_from_request(request: Request) -> str:
     """
-    Resolve a site key from the request's client IP using `site_ip_ranges`.
+    Resolve a site *id* (e.g. '1', '2') from the client IP using the unified printers config.
     Raises ValueError if no match is found.
     """
     client_ip = _parse_client_ip(request)
 
-    for site, range_data in site_ip_ranges.items():
+    for site_id, range_data in get_site_ranges().items():
         start = range_data.get("start")
         end = range_data.get("end")
         if (
@@ -77,61 +79,29 @@ async def resolve_site_from_request(request: Request) -> str:
             and isinstance(end, str)
             and ip_in_range(client_ip, start, end)
         ):
-            return site
+            return site_id
 
     raise ValueError(f"No site mapping found for IP: {client_ip}")
 
 
-def _iter_all_role_dicts(cfg: Mapping[str, object]) -> Iterable[Mapping[str, object]]:
+def get_printers_for_site(site_id: str) -> Dict[str, Dict[str, PrinterConn]]:
     """
-    Walk the nested `label_printers_full_list` structure and yield leaf role dicts.
-    Expected structure:
-      site -> line -> role -> {ip, port}
+    Return printers for a specific site-id, grouped by line and role.
+    Includes only roles 'large' and 'small'. Skips the 'non_production' block.
+    Example:
+      {
+        "line1": {
+          "large": {"ip": "...", "port": 9100},
+          "small": {"ip": "...", "port": 9100}
+        },
+        ...
+      }
     """
-    for site_data in cfg.values():
-        if not isinstance(site_data, Mapping):
-            continue
-        for line_data in site_data.values():
-            if not isinstance(line_data, Mapping):
-                continue
-            for role_data in line_data.values():
-                if isinstance(role_data, Mapping):
-                    yield role_data
-
-
-def get_all_printer_connections() -> List[PrinterConn]:
-    """
-    Return all valid printer connections across all sites/lines/roles.
-    """
-    results: List[PrinterConn] = []
-    for role_data in _iter_all_role_dicts(label_printers_full_list):
-        conn = validate_printer_connection(role_data)
-        if conn:
-            results.append(conn)
-    return results
-
-
-def get_printers_for_site(site: str) -> Dict[str, Dict[str, PrinterConn]]:
-    """
-    Return printers for a specific site, grouped by line and role.
-    Includes only roles 'large' and 'small'. Skips the 'misc' line.
-    Example return:
-    {
-      "line_a": {
-        "large": {"ip": "...", "port": 9100},
-        "small": {"ip": "...", "port": 9100}
-      },
-      ...
-    }
-    """
-    site_data = label_printers_full_list.get(site)
-    if not isinstance(site_data, Mapping):
-        raise ValueError(f"Site '{site}' not found")
-
+    site_map = get_addresses_for_site(site_id)
     result: Dict[str, Dict[str, PrinterConn]] = {}
 
-    for line_name, roles in site_data.items():
-        if line_name == "misc":
+    for line_name, roles in site_map.items():
+        if line_name == "non_production":
             continue
         if not isinstance(roles, Mapping):
             continue
@@ -153,32 +123,52 @@ def get_printers_for_site(site: str) -> Dict[str, Dict[str, PrinterConn]]:
 
 async def get_printers_on_site(request: Request) -> Dict[str, Dict[str, PrinterConn]]:
     """
-    Main route-level access: get printers based on request IP's resolved site.
+    Route-level access: derive site-id from request IP, then return that site's printers.
     """
-    site = await resolve_site_from_request(request)
-    return get_printers_for_site(site)
+    site_id = await resolve_site_id_from_request(request)
+    return get_printers_for_site(site_id)
 
 
 async def get_pallet_label_printer(request: Request) -> Tuple[PrinterConn, str]:
     """
-    Get the pallet label printer connection and the resolved site.
-    Looks under the 'non_production' -> 'pallet_label_printer' path.
+    Return (connection, site_id) for the site's non_production.pallet_label_printer.
     """
-    site = await resolve_site_from_request(request)
-    site_data = label_printers_full_list.get(site)
+    site_id = await resolve_site_id_from_request(request)
+    site_map = get_addresses_for_site(site_id)
 
-    if not isinstance(site_data, Mapping):
-        raise ValueError(f"Site '{site}' not found in printer config")
-
-    non_prod = site_data.get("non_production")
-    printer = None
-    if isinstance(non_prod, Mapping):
-        printer = non_prod.get("pallet_label_printer")
+    non_prod = site_map.get("non_production")
+    printer = (
+        non_prod.get("pallet_label_printer") if isinstance(non_prod, Mapping) else None
+    )
 
     conn = validate_printer_connection(
         printer if isinstance(printer, Mapping) else None
     )
     if not conn:
-        raise ValueError(f"Pallet label printer not found or invalid for site '{site}'")
+        raise ValueError(
+            f"Pallet label printer not found or invalid for site '{site_id}'"
+        )
 
-    return conn, site
+    return conn, site_id
+
+
+def get_all_printer_connections() -> List[PrinterConn]:
+    """
+    Return all valid printer connections across all sites/lines/roles,
+    including non_production entries (e.g., pallet_label_printer).
+    """
+    results: List[PrinterConn] = []
+    addrs = get_addresses()
+    for site_map in addrs.values():
+        if not isinstance(site_map, Mapping):
+            continue
+        for line_map in site_map.values():
+            if not isinstance(line_map, Mapping):
+                continue
+            for conn in line_map.values():
+                valid = validate_printer_connection(
+                    conn if isinstance(conn, Mapping) else None
+                )
+                if valid:
+                    results.append(valid)
+    return results

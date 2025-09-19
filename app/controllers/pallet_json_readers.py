@@ -1,3 +1,4 @@
+# app/controllers/pallet_json_readers.py
 from __future__ import annotations
 
 import json
@@ -159,3 +160,42 @@ def get_pallet_label_zpl(name: str) -> str:
     Return the full ZPL for a structure (joined with newlines).
     """
     return "\n".join(get_pallet_label_lines(name))
+
+
+def validate_fn_usage(name: str) -> None:
+    """
+    Ensure every ^FN<number> referenced in the label exists in PALLETVARIABLES.
+    Lightweight static check; does not fully parse ZPL.
+
+    Raises:
+        ValueError: if the label references FN numbers not present in PALLETVARIABLES.
+    """
+    import re
+
+    lines = get_pallet_label_lines(name)
+    fn_nums = {
+        int(m.group(1)) for line in lines for m in re.finditer(r"\^FN(\d+)", line)
+    }
+    if not fn_nums:
+        return
+
+    vars_map = get_pallet_variables()
+    valid_nums = set(vars_map.values())
+    missing = sorted(fn_nums - valid_nums)
+    if missing:
+        raise ValueError(
+            f"Label '{name}' references ^FN numbers with no mapping: {missing}. "
+            f"Defined FN numbers: {sorted(valid_nums)}"
+        )
+
+
+# ---------- Debug helper ----------
+def print_pallet_label(name: str, *, header: bool = True) -> None:
+    """
+    Print the joined ZPL to the console (useful during development).
+    """
+    if header:
+        print(f"--- ZPL for pallet label '{name}' ---")
+    print(get_pallet_label_zpl(name))
+    if header:
+        print("--- end ZPL ---")

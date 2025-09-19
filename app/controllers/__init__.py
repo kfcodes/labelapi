@@ -1,53 +1,87 @@
-"""
-Public API for controllers.
+# app/controllers/__init__.py
+# ====================================================================
+# Public controller API for config & label resources
+# --------------------------------------------------------------------
+# Domains:
+#   1) Printers: unified printers.json (Ranges + Addresses)
+#   2) Pallet labels: variables + structures for pallet ZPL
+#   3) Box labels: variables + structures for box ZPL (with {placeholders})
+#
+# Notes:
+# - Backward compatibility is preserved for legacy names:
+#   `label_printers_full_list`, `site_ip_ranges`, `load_all_config_data`, etc.
+# - Prefer the new, explicit functions for new code.
+# ====================================================================
 
-Usage in routes/services:
-    from app.controller import (
-        # box labels
-        main_print_box_label_function, upload_box_label_structures_to_printers,
-        load_label_template_from_env, apply_zpl_placeholders,
-        # internal label
-        blend_label_function,
-        # pallet labels
-        main_pallet_label_function, print_blank_pallet_labels,
-        generate_and_print_combo_label, upload_pallet_label_data_to_printers,
-        # printer data
-        validate_printer_connection, ip_in_range, resolve_site_from_request,
-        get_all_printer_connections, get_printers_for_site,
-        get_printers_on_site, get_pallet_label_printer,
-        # config/json
-        load_printers_from_file, load_site_ip_ranges, load_box_label_variables,
-        load_pallet_label_variables, get_label_variables, load_all_config_data,
-        label_printers_full_list, site_ip_ranges,
-    )
+from __future__ import annotations
 
-Keep this file light: only imports/re-exports; no I/O at import time.
-"""
+from pathlib import Path
+from typing import Callable, Dict, Optional
 
-# --- Box label ---
+# --------------------------------------------------------------------
+# 1) Printers (core readers for printers.json)
+# --------------------------------------------------------------------
+from .printer_json_readers import (
+    get_addresses,
+    get_addresses_for_site,
+    get_pallet_label_printer_for_site,
+    get_printers_config,
+    get_site_ranges,
+    load_printers_config,
+)
+
+# Site-aware helpers (derive site from request IP, etc.)
+from .printers import (
+    get_all_printer_connections,
+    get_pallet_label_printer,
+    get_printers_for_site,
+    get_printers_on_site,
+    resolve_site_id_from_request,
+)
+
+# Legacy mirrors for back-compat (populated by _refresh_legacy_mirrors)
+site_ip_ranges: Dict[str, Dict[str, str]] = {}
+label_printers_full_list: Dict[str, Dict[str, Dict[str, dict]]] = {}
+
+# --------------------------------------------------------------------
+# 2) Box labels
+# --------------------------------------------------------------------
+from .box_json_readers import (
+    compile_box_label_to_fn,
+    get_box_label_lines,
+    get_box_label_zpl,
+    get_box_variables,
+    get_compiled_box_label_zpl,
+    list_box_label_names,
+    list_placeholders_in_label,
+    load_box_config,
+    print_compiled_box_label,
+)
+from .box_json_readers import (
+    validate_placeholder_usage as validate_box_placeholder_usage,
+)
 from .box_labels import (
-    apply_zpl_placeholders,
-    load_label_template_from_env,
     main_print_box_label_function,
     upload_box_label_structures_to_printers,
 )
 
-# --- Internal label ---
-from .internal_label_controller import blend_label_function
+# --------------------------------------------------------------------
+# Internal / blend labels
+# --------------------------------------------------------------------
+from .internal_labels import blend_label_function
 
-# --- JSON/config helpers & in-memory stores ---
-from .json_readers import (
-    get_label_variables,
-    label_printers_full_list,
-    load_all_config_data,
-    load_box_label_variables,
-    load_pallet_label_variables,
-    load_printers_from_file,
-    load_site_ip_ranges,
-    site_ip_ranges,
+# --------------------------------------------------------------------
+# 3) Pallet labels
+# --------------------------------------------------------------------
+from .pallet_json_readers import (
+    get_pallet_label_lines,
+    get_pallet_label_zpl,
+    get_pallet_variables,
+    list_pallet_label_names,
+    load_pallet_config,
+    print_pallet_label,
 )
-
-# --- Pallet label ---
+from .pallet_json_readers import validate_fn_usage as validate_pallet_fn_usage
 from .pallet_labels import (
     generate_and_print_combo_label,
     main_pallet_label_function,
@@ -55,45 +89,167 @@ from .pallet_labels import (
     upload_pallet_label_data_to_printers,
 )
 
-# --- Printer data / site resolution ---
-from .printers import (
-    get_all_printer_connections,
-    get_pallet_label_printer,
-    get_printers_for_site,
-    get_printers_on_site,
-    ip_in_range,
-    resolve_site_from_request,
-    validate_printer_connection,
-)
 
+# --------------------------------------------------------------------
+# Backward-compatibility helpers
+# --------------------------------------------------------------------
+def _refresh_legacy_mirrors() -> None:
+    """Sync legacy globals from the new printers config to avoid breaking old imports."""
+    global site_ip_ranges, label_printers_full_list
+    site_ip_ranges = dict(get_site_ranges())
+    label_printers_full_list = {
+        site: dict(lines) for site, lines in get_addresses().items()
+    }
+
+
+def load_printers_from_file(
+    path: Optional[str | Path] = None, *, logger: Optional[Callable[[str], None]] = None
+):
+    """
+    Back-compat alias for loading printers.json.
+    - If `path` is provided, load from there; otherwise use default env path.
+    - Returns the legacy-shaped Addresses map (label_printers_full_list).
+    """
+    if path is None:
+        load_printers_config(logger=logger)
+    else:
+        load_printers_config(path, logger=logger)
+    _refresh_legacy_mirrors()
+    return label_printers_full_list
+
+
+def load_site_ip_ranges(
+    path: Optional[str | Path] = None, *, logger: Optional[Callable[[str], None]] = None
+):
+    """
+    Back-compat shim: ranges now live inside printers.json.
+    - If `path` is provided, we reload printers.json from that path first.
+    - Returns the Ranges map (legacy name).
+    """
+    if path is not None:
+        load_printers_config(path, logger=logger)
+    if not site_ip_ranges:
+        _refresh_legacy_mirrors()
+    return site_ip_ranges
+
+
+def load_box_label_variables(
+    path: Optional[str | Path] = None, *, logger: Optional[Callable[[str], None]] = None
+):
+    """Back-compat alias to load_box_config(). Returns the variables map for BOX labels."""
+    if path is None:
+        load_box_config(logger=logger)
+    else:
+        load_box_config(path, logger=logger)
+    return get_box_variables()
+
+
+def load_pallet_label_variables(
+    path: Optional[str | Path] = None, *, logger: Optional[Callable[[str], None]] = None
+):
+    """Back-compat alias to load_pallet_config(). Returns the variables map for Pallet labels."""
+    if path is None:
+        load_pallet_config(logger=logger)
+    else:
+        load_pallet_config(path, logger=logger)
+    return get_pallet_variables()
+
+
+def get_label_variables(label_type: str = "box"):
+    """Back-compat helper: 'box' -> box variables, 'pallet' -> pallet variables."""
+    if label_type == "box":
+        return get_box_variables()
+    if label_type == "pallet":
+        return get_pallet_variables()
+    raise ValueError("Unsupported label type. Use 'box' or 'pallet'.")
+
+
+def load_all_config_data(
+    *,
+    printers_path: Optional[str | Path] = None,
+    box_path: Optional[str | Path] = None,
+    pallet_path: Optional[str | Path] = None,
+    verbose: bool = False,
+) -> None:
+    """
+    Back-compat bulk loader used by some apps at startup.
+    Loads printers.json, then box & pallet label configs.
+    Set `verbose=True` to echo loaded JSON via print.
+    """
+    logger = print if verbose else None
+
+    # Printers (unified)
+    if printers_path is None:
+        load_printers_config(logger=logger)
+    else:
+        load_printers_config(printers_path, logger=logger)
+    _refresh_legacy_mirrors()
+
+    # Box labels
+    if box_path is None:
+        load_box_config(logger=logger)
+    else:
+        load_box_config(box_path, logger=logger)
+
+    # Pallet labels
+    if pallet_path is None:
+        load_pallet_config(logger=logger)
+    else:
+        load_pallet_config(pallet_path, logger=logger)
+
+
+# --------------------------------------------------------------------
+# Public export surface
+# --------------------------------------------------------------------
 __all__ = [
-    # box
+    # Box (actions)
     "main_print_box_label_function",
     "upload_box_label_structures_to_printers",
-    "load_label_template_from_env",
-    "apply_zpl_placeholders",
-    # internal
-    "blend_label_function",
-    # pallet
+    # Printers (helpers)
+    "resolve_site_id_from_request",
+    "get_printers_for_site",
+    "get_printers_on_site",
+    "get_pallet_label_printer",
+    "get_all_printer_connections",
+    # Printers (core readers)
+    "load_printers_config",
+    "get_printers_config",
+    "get_site_ranges",
+    "get_addresses",
+    "get_addresses_for_site",
+    "get_pallet_label_printer_for_site",
+    # Pallet (readers + actions)
+    "load_pallet_config",
+    "get_pallet_variables",
+    "list_pallet_label_names",
+    "get_pallet_label_lines",
+    "get_pallet_label_zpl",
+    "validate_pallet_fn_usage",
+    "print_pallet_label",
     "main_pallet_label_function",
     "print_blank_pallet_labels",
     "generate_and_print_combo_label",
     "upload_pallet_label_data_to_printers",
-    # printer data
-    "validate_printer_connection",
-    "ip_in_range",
-    "resolve_site_from_request",
-    "get_all_printer_connections",
-    "get_printers_for_site",
-    "get_printers_on_site",
-    "get_pallet_label_printer",
-    # json/config
-    "load_printers_from_file",
-    "load_site_ip_ranges",
-    "load_box_label_variables",
-    "load_pallet_label_variables",
+    # Box (readers)
+    "load_box_config",
+    "get_box_variables",
+    "list_box_label_names",
+    "get_box_label_lines",
+    "get_box_label_zpl",
+    "compile_box_label_to_fn",
+    "get_compiled_box_label_zpl",
+    "list_placeholders_in_label",
+    "validate_box_placeholder_usage",
+    "print_compiled_box_label",
+    # Internal / blend
+    "blend_label_function",
+    # Back-compat exports (legacy names kept working)
     "get_label_variables",
     "load_all_config_data",
-    "label_printers_full_list",
+    "load_box_label_variables",
+    "load_pallet_label_variables",
+    "load_printers_from_file",
+    "load_site_ip_ranges",
     "site_ip_ranges",
+    "label_printers_full_list",
 ]

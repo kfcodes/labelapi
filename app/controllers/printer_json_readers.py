@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Mapping, Optional, TypedDict
 # --------------------
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 ENV_DIR: Path = BASE_DIR / "env"
+DEFAULT_PATH: Path = ENV_DIR / "printers.json"
 
 Logger = Callable[[str], None]
 
@@ -28,7 +29,6 @@ class PrinterConn(TypedDict):
 
 # Lines -> roles -> connection; e.g. "line1" -> {"large": {...}, "small": {...}}
 LineRoleMap = Dict[str, Dict[str, PrinterConn]]
-
 # SiteId -> {"line1": {...}, "non_production": {...}}
 AddressesMap = Dict[str, LineRoleMap]
 
@@ -44,6 +44,7 @@ class PrintersConfig(TypedDict):
 # In-memory store
 # --------------------
 _printers_config: PrintersConfig = {"Ranges": {}, "Addresses": {}}
+_loaded: bool = False
 
 
 # --------------------
@@ -65,20 +66,16 @@ def resolve_config_path(path: str | Path) -> Path:
 def _read_json(path: Path, error_context: str, logger: Optional[Logger]) -> Any:
     if not path.exists():
         raise FileNotFoundError(f"{error_context.title()} file not found: {path}")
-
     try:
         text = path.read_text(encoding="utf-8").strip()
     except Exception as e:
         raise OSError(f"Failed reading {error_context} file {path}: {e}") from e
-
     if not text:
         raise ValueError(f"{error_context.title()} file is empty: {path}")
-
     try:
         data = json.loads(text)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid {error_context} JSON in {path}: {e}") from e
-
     if logger:
         logger(
             f"[{error_context}] Loaded from {path}:\n{json.dumps(data, indent=4, ensure_ascii=False)}"
@@ -139,53 +136,62 @@ def _ensure_printers_config_shape(data: Any) -> PrintersConfig:
             site_line_map[str(line_name)] = role_map
         norm_addrs[str(site_id)] = site_line_map
 
+    # Cross-check: every site in Addresses should exist in Ranges
+    missing_ranges = sorted(s for s in norm_addrs.keys() if s not in norm_ranges)
+    if missing_ranges:
+        raise ValueError(
+            f"Sites present in Addresses but missing in Ranges: {missing_ranges}"
+        )
+
     return {"Ranges": norm_ranges, "Addresses": norm_addrs}
+
+
+def _ensure_loaded() -> None:
+    if not _loaded:
+        raise RuntimeError(
+            "Printers config not loaded. Call load_printers_config() during startup."
+        )
 
 
 # --------------------
 # Public API
 # --------------------
 def load_printers_config(
-    path: str | Path = ENV_DIR / "printers.json",
+    path: str | Path = DEFAULT_PATH,
     *,
     logger: Optional[Logger] = None,
 ) -> PrintersConfig:
     """
     Load the unified printers config (Ranges + Addresses) into memory.
     """
-    global _printers_config
+    global _printers_config, _loaded
     file_path = resolve_config_path(path)
     raw = _read_json(file_path, error_context="printers", logger=logger)
     _printers_config = _ensure_printers_config_shape(raw)
+    _loaded = True
     return _printers_config
 
 
 def get_printers_config() -> PrintersConfig:
-    """
-    Return the in-memory printers config. Call load_printers_config() at startup.
-    """
+    """Return the in-memory printers config. Call load_printers_config() at startup."""
+    _ensure_loaded()
     return _printers_config
 
 
 def get_site_ranges() -> Dict[str, IpRange]:
-    """
-    Convenience accessor for Ranges (site-id keyed).
-    """
+    """Convenience accessor for Ranges (site-id keyed)."""
+    _ensure_loaded()
     return _printers_config["Ranges"]
 
 
 def get_addresses() -> AddressesMap:
-    """
-    Convenience accessor for Addresses (site-id keyed).
-    """
+    """Convenience accessor for Addresses (site-id keyed)."""
+    _ensure_loaded()
     return _printers_config["Addresses"]
 
 
 def get_addresses_for_site(site_id: str) -> LineRoleMap:
-    """
-    Return line/role map for a specific site-id.
-    Raises KeyError if the site-id doesn't exist.
-    """
+    """Return line/role map for a specific site-id. Raises KeyError if not found."""
     addrs = get_addresses()
     if site_id not in addrs:
         raise KeyError(f"Site '{site_id}' not found in addresses")
@@ -193,9 +199,7 @@ def get_addresses_for_site(site_id: str) -> LineRoleMap:
 
 
 def get_pallet_label_printer_for_site(site_id: str) -> PrinterConn:
-    """
-    Look up the non-production pallet label printer for a site.
-    """
+    """Look up the non-production pallet label printer for a site."""
     site_map = get_addresses_for_site(site_id)
     non_prod = site_map.get("non_production") or {}
     conn = non_prod.get("pallet_label_printer")
