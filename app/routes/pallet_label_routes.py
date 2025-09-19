@@ -1,9 +1,10 @@
-from app.controller import (
+from fastapi import APIRouter, HTTPException, Request
+
+from app.controllers import (
     generate_and_print_combo_label,
     get_pallet_label_printer,
     main_pallet_label_function,
 )
-from fastapi import APIRouter, HTTPException, Request
 
 pallet_label_router = APIRouter()
 

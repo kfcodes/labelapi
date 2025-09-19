@@ -1,11 +1,12 @@
 from typing import Any, Dict
 
-from app.controller import (
-    get_printers_on_site,
-)  # we’ll derive the correct printer from the request/site
-from app.controller import main_print_box_label_function
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.controllers import (  # we’ll derive the correct printer from the request/site
+    get_printers_on_site,
+    main_print_box_label_function,
+)
 
 box_label_router = APIRouter()
 

@@ -25,7 +25,7 @@ Keep this file light: only imports/re-exports; no I/O at import time.
 """
 
 # --- Box label ---
-from .box_label_controller import (
+from .box_labels import (
     apply_zpl_placeholders,
     load_label_template_from_env,
     main_print_box_label_function,
@@ -36,7 +36,7 @@ from .box_label_controller import (
 from .internal_label_controller import blend_label_function
 
 # --- JSON/config helpers & in-memory stores ---
-from .json_controller import (
+from .json_readers import (
     get_label_variables,
     label_printers_full_list,
     load_all_config_data,
@@ -48,7 +48,7 @@ from .json_controller import (
 )
 
 # --- Pallet label ---
-from .pallet_label_controller import (
+from .pallet_labels import (
     generate_and_print_combo_label,
     main_pallet_label_function,
     print_blank_pallet_labels,
@@ -56,7 +56,7 @@ from .pallet_label_controller import (
 )
 
 # --- Printer data / site resolution ---
-from .printer_data_controller import (
+from .printers import (
     get_all_printer_connections,
     get_pallet_label_printer,
     get_printers_for_site,

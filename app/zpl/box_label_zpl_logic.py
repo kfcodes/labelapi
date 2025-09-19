@@ -1,6 +1,3 @@
-from app.controller.json_controller import box_label_variables
-
-
 def create_box_label_zpl(label_data: dict, qty: int, debug: bool = False) -> str:
     """
     Generate a ZPL string for a box label using the global mapping (box_label_variables).

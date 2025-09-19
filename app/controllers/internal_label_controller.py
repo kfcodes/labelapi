@@ -1,11 +1,9 @@
 import json
 
-from app.external_modules.printer_connection_logic.zpl_printer_logic import (
+from app.printer_connection.zpl_printer_logic import (
     label_printer_connection,
 )  # kept for future use (currently commented)
-from app.external_modules.zpl_logic.internal_label_zpl_logic import (
-    create_blend_label_zpl,
-)
+from app.zpl.internal_label_zpl_logic import create_blend_label_zpl
 
 
 # async def blend_label_function(site,printer, body):

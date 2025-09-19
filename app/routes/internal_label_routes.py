@@ -1,5 +1,6 @@
-from app.controller import blend_label_function  # internal label controller
 from fastapi import APIRouter, HTTPException, Request
+
+from app.controllers import blend_label_function  # internal label controller
 
 internal_label_router = APIRouter()
 

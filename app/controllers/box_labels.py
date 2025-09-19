@@ -3,12 +3,10 @@ import re
 from pathlib import Path
 from typing import Dict, Union
 
-from app.controller.json_controller import load_box_label_variables
+from app.controllers.json_readers import load_box_label_variables
 from app.database.read_db import read_db
-from app.external_modules.printer_connection_logic.zpl_printer_logic import (
-    label_printer_connection,
-)
-from app.external_modules.zpl_logic.box_label_zpl_logic import create_box_label_zpl
+from app.printer_connection.zpl_printer_logic import label_printer_connection
+from app.zpl.box_label_zpl_logic import create_box_label_zpl
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
