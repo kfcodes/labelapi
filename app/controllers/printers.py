@@ -7,7 +7,13 @@ from typing import Dict, Iterable, List, Mapping, Optional, Tuple, TypedDict
 from fastapi import Request
 
 # NEW: use the unified printers config accessors
-from .printer_json_readers import get_addresses_for_site, get_site_ranges
+# at top:
+from .printer_json_readers import (  # make sure BOTH are imported
+    get_addresses,
+    get_addresses_for_site,
+    get_site_ranges,
+    load_printers_config,
+)
 
 
 class PrinterConn(TypedDict):
@@ -152,23 +158,43 @@ async def get_pallet_label_printer(request: Request) -> Tuple[PrinterConn, str]:
     return conn, site_id
 
 
-def get_all_printer_connections() -> List[PrinterConn]:
+def get_all_printer_connections(
+    *, include_non_production: bool = True
+) -> List[PrinterConn]:
     """
-    Return all valid printer connections across all sites/lines/roles,
-    including non_production entries (e.g., pallet_label_printer).
+    Collect all valid printer connections across all sites/lines/roles.
+    Optionally include 'non_production' entries (default: True).
+    Safe to call from async routes (it's synchronous).
     """
+    # Ensure config is available; if not, load it now.
+    try:
+        addrs = get_addresses()
+    except RuntimeError:
+        load_printers_config()
+        addrs = get_addresses()
+
     results: List[PrinterConn] = []
-    addrs = get_addresses()
-    for site_map in addrs.values():
-        if not isinstance(site_map, Mapping):
+    for line_map in addrs.values():  # site -> lines
+        if not isinstance(line_map, Mapping):
             continue
-        for line_map in site_map.values():
-            if not isinstance(line_map, Mapping):
+        for line_name, roles in line_map.items():
+            if not include_non_production and line_name == "non_production":
                 continue
-            for conn in line_map.values():
+            if not isinstance(roles, Mapping):
+                continue
+            for conn in roles.values():  # role -> {ip, port} or nested
                 valid = validate_printer_connection(
                     conn if isinstance(conn, Mapping) else None
                 )
                 if valid:
                     results.append(valid)
-    return results
+
+    # (optional) de-dupe identical ip:port combos
+    seen = set()
+    deduped: List[PrinterConn] = []
+    for c in results:
+        key = (c["ip"], c["port"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(c)
+    return deduped
