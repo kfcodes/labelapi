@@ -7,7 +7,7 @@ from typing import Dict, List, Mapping, Tuple, Union
 from dotenv import load_dotenv
 
 from app.database.read_db import read_db, read_to_list_index
-from app.database.write_db import update_pallet_packing_list
+from app.database.write_db import update_pallet_packing_list, write_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.zpl.pallet_label_zpl_logic import (
     create_combined_pallet_label_data,
@@ -89,18 +89,21 @@ async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list
     """
     try:
         # Write the update to the DB
-        update_pallets_response = read_db(
+        update_pallets_response = write_db(
             str(os.getenv("COMBINEPALLETDATA")).format(pallet_id, height, pallet_list)
         )
+        print("update_pallets_response")
         print(update_pallets_response)
 
         # Format IDs for the pallets being combined
         ids = str(pallet_list).replace("(", "").replace(")", "").replace("'", "")
+        print(ids)
 
         # Get combined pallet details from the DB
         combined_pallet_data = read_to_list_index(
             str(os.getenv("GETCOMBINEDPALLETDATA")).format(pallet_id)
         )
+        print(combined_pallet_data)
         combo_pallet_label_zpl = create_combined_pallet_label_data(
             combined_pallet_data[0], ids
         )
@@ -109,6 +112,7 @@ async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list
             combo_pallet_label_zpl, printer["ip"], printer["port"]
         )
         return response
+
     except Exception as ex:
         print("Data could not be processed: \n", ex)
 
