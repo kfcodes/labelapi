@@ -1,9 +1,10 @@
-# app/controllers/pallet_labels.py
 from __future__ import annotations
 
 import os
 from pathlib import Path
 from typing import Dict, List, Mapping, Tuple, Union
+
+from dotenv import load_dotenv
 
 from app.database.read_db import read_db, read_to_list_index
 from app.database.write_db import update_pallet_packing_list
@@ -12,7 +13,6 @@ from app.zpl.pallet_label_zpl_logic import (
     create_combined_pallet_label_data,
     create_pallet_label_zpl,
 )
-from dotenv import load_dotenv
 
 # NEW: read pallet structures/variables from JSON (not ad-hoc files)
 from .pallet_json_readers import (
@@ -22,7 +22,7 @@ from .pallet_json_readers import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
-load_dotenv(BASE_DIR / "env" / "pallet_label.env")
+load_dotenv(BASE_DIR / "env" / "label_variables.env")
 
 
 # ---------------------------------------------------------------------
@@ -39,8 +39,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
             str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id))
         )[0]
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        label_structure_name = f"{label_type_info[0]['pallet_label_name']}"
-        # TODO: remove this override once your DB returns the correct structure name
+        # label_structure_name = f"{label_type_info[0]['pallet_label_name']}"
         label_structure_name = "PALSTD1"
 
         # select the extra info method based on label type

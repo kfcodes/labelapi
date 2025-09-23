@@ -12,7 +12,9 @@ def update_pallet_packing_list(palletid: int, site: str) -> None:
         cursor.execute(f"Call UpdateOrInsertPackingList({int(palletid)},'{str(site)}')")
         cursor.close()
         connection.commit()
-        print("Called stored procedure UpdateOrInsertPackingList")
+        print(
+            f"Called UpdateOrInsertPackingList on pallet: {int(palletid)}, location: {str(site)}"
+        )
     except Exception as ex:
         print("DB write failed:\n", ex)
         raise

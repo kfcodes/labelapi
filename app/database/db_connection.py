@@ -41,6 +41,8 @@ CONNECTION_STRING = f"{DRIVER}://{USER}:{PASS}@{HOST}:{PORT}/{NAME}"
 
 @lru_cache(maxsize=1)
 def db() -> Engine:
+    print("CONNECTION STRING")
+    print(CONNECTION_STRING)
     return create_engine(CONNECTION_STRING, pool_pre_ping=True)
 
 
