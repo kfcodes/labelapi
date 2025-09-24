@@ -41,20 +41,15 @@ def create_combined_pallet_label_data(combined_summary: dict, combined_ids: str)
     Simple combined pallet label that also prints the combined IDs.
     Uses the same ^FN mappings as create_pallet_label_zpl and adds ^FN8 for IDs.
     """
-    label_type = combined_summary.get("label_structure_name", "PALSTD1")
-    zpl_lines = [
-        "^XA",
-        f"^XFE:{label_type}.ZPL^FS",
-        f"^FN1^FD{combined_summary.get('pallet_id', '')}^FS",
-        f"^FN2^FD{int(combined_summary.get('pallet_quantity', 0))}^FS",
-        f"^FN3^FD{combined_summary.get('gross_weight', '')}^FS",
-        f"^FN4^FD{combined_summary.get('pallet_dimensions', '')}^FS",
-        f"^FN5^FD{combined_ids}^FS",  # combined IDs
-        f"^FN6^FD{combined_summary.get('gross_weight', '')}^FS",
-        f"^FN7^FD{combined_summary.get('gross_dimensions', '')}^FS",
-        "^XZ",
-    ]
-    return "\n".join(zpl_lines)
+    label_type = "PALCOMBO"
+    zpl_lines = f"""^XA
+        ^XFE:{label_type}.ZPL^FS
+        ^FN3^FD{str(combined_ids)}^FS
+        ^FN1^FD{int(combined_summary.get('gross_weight', 0))}^FS
+        ^FN2^FD{int(combined_summary.get('gross_height', 0))}^FS
+        ^XZ"""
+
+    return zpl_lines
 
 
 def add_products_to_label(pallet_products: list[dict]) -> str:
