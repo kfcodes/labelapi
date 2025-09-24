@@ -4,8 +4,6 @@ import os
 from pathlib import Path
 from typing import Dict, List, Mapping, Tuple, Union
 
-from dotenv import load_dotenv
-
 from app.database.read_db import read_db, read_to_list_index
 from app.database.write_db import update_pallet_packing_list, write_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
@@ -13,8 +11,8 @@ from app.zpl.pallet_label_zpl_logic import (
     create_combined_pallet_label_data,
     create_pallet_label_zpl,
 )
+from dotenv import load_dotenv
 
-# NEW: read pallet structures/variables from JSON (not ad-hoc files)
 from .pallet_json_readers import (
     get_pallet_label_zpl,
     load_pallet_config,
@@ -25,9 +23,6 @@ BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
 
 
-# ---------------------------------------------------------------------
-# Main pallet label printing flows (kept as-is, with small cleanups)
-# ---------------------------------------------------------------------
 async def main_pallet_label_function(location, printer, pallet_id):
     """
     Build a pallet label ZPL string using DB data and send it to a specific printer.
@@ -135,9 +130,6 @@ def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     return pallet_contents
 
 
-# ---------------------------------------------------------------------
-# FIXED: upload pallet label data (structures) to printers
-# ---------------------------------------------------------------------
 def upload_pallet_label_data_to_printers(
     printers: List[Dict[str, Union[str, int]]],
     *,
@@ -156,11 +148,9 @@ def upload_pallet_label_data_to_printers(
         The compiled ZPL string (if dry_run), otherwise newline-joined printer responses.
     """
     try:
-        # Ensure pallet config is loaded and the structure is valid
         load_pallet_config()
         validate_fn_usage(label_name)
 
-        # Pallet structures already use ^FN<number>; get the joined ZPL
         zpl = get_pallet_label_zpl(label_name)
 
         if dry_run:

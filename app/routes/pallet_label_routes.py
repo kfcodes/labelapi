@@ -1,15 +1,14 @@
-from fastapi import APIRouter, HTTPException, Request
-
 from app.controllers import (
     generate_and_print_combo_label,
     get_pallet_label_printer,
     main_pallet_label_function,
 )
+from fastapi import APIRouter, HTTPException, Request
 
 pallet_label_router = APIRouter()
 
 
-@pallet_label_router.get("/print/{pallet_id}")
+@pallet_label_router.get("/print_pallet_label/{pallet_id}")
 async def print_pallet_label(pallet_id: int, request: Request):
     try:
         printer, site = await get_pallet_label_printer(request)
