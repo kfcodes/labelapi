@@ -1,28 +1,31 @@
-# app/controllers/pallet_json_readers.py
 from __future__ import annotations
 
 import json
+import re
+import threading
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Mapping, Optional, Set, TypedDict
 
-# Reuse your existing base/env dirs if you keep this in the same package
+# -------------------------------------------------------------------
+# Paths
+# -------------------------------------------------------------------
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 ENV_DIR: Path = BASE_DIR / "env"
+DEFAULT_PATH: Path = ENV_DIR / "pallet_labels.json"
 
 Logger = Callable[[str], None]
 
 
-# ---------- Types ----------
+# -------------------------------------------------------------------
+# Types
+# -------------------------------------------------------------------
 class PalletVariables(TypedDict):
     # e.g. {"id": 1, "weight": 2, "height": 3, "dimensions": 4}
-    # (values are ZPL ^FN numbers)
-    # NOTE: keep values "int" (not str) for correctness
+    # values are ZPL ^FN numbers (must be int)
     pass
 
 
-PalletLabelStructures = Dict[
-    str, List[str]
-]  # e.g. {"PALSTD1": ["^XA...", "...", "^XZ"]}
+PalletLabelStructures = Dict[str, List[str]]  # {"PALSTD1": ["^XA...", "...", "^XZ"]}
 
 
 class PalletBlock(TypedDict):
@@ -30,17 +33,27 @@ class PalletBlock(TypedDict):
     PALLETLABELSTRUCTURES: PalletLabelStructures
 
 
-class PalletConfig(TypedDict):
-    # Prefer top-level {"Pallet": {...}} but also support direct {"PALLETVARIABLES":...}
-    Pallet: PalletBlock
-
-
-# ---------- In-memory store ----------
+# -------------------------------------------------------------------
+# In-memory store
+# -------------------------------------------------------------------
 _pallet_config: PalletBlock = {"PALLETVARIABLES": {}, "PALLETLABELSTRUCTURES": {}}
+_loaded: bool = False
+_LOCK = threading.Lock()
 
 
-# ---------- Path & IO ----------
-def _resolve_path(path: str | Path) -> Path:
+# -------------------------------------------------------------------
+# Path & IO
+# -------------------------------------------------------------------
+def _resolve_path(path: Optional[str | Path]) -> Path:
+    """
+    Resolution rules:
+      - None: use DEFAULT_PATH
+      - Absolute path: as-is
+      - Starts with 'env/': relative to BASE_DIR
+      - Otherwise: relative to ENV_DIR
+    """
+    if path is None:
+        return DEFAULT_PATH
     p = Path(path)
     if p.is_absolute():
         return p
@@ -67,7 +80,9 @@ def _read_json(path: Path, ctx: str, logger: Optional[Logger]) -> Any:
     return data
 
 
-# ---------- Validation / normalization ----------
+# -------------------------------------------------------------------
+# Validation / normalization
+# -------------------------------------------------------------------
 def _extract_pallet_block(data: Any) -> Mapping[str, Any]:
     """
     Accept either:
@@ -84,7 +99,6 @@ def _extract_pallet_block(data: Any) -> Mapping[str, Any]:
             raise TypeError("'Pallet' must be an object")
         return pallet
 
-    # fall back to direct keys
     if "PALLETVARIABLES" in data and "PALLETLABELSTRUCTURES" in data:
         return data  # type: ignore[return-value]
 
@@ -115,40 +129,53 @@ def _ensure_pallet_shape(pallet_block: Mapping[str, Any]) -> PalletBlock:
         if not isinstance(name, str):
             raise ValueError("Label structure names must be strings")
         if isinstance(lines, list) and all(isinstance(s, str) for s in lines):
-            structures[name] = lines  # list-of-lines ZPL
+            structures[name] = list(lines)  # copy
         else:
             raise ValueError(f"Label '{name}' must be an array of strings (ZPL lines)")
     return {"PALLETVARIABLES": variables, "PALLETLABELSTRUCTURES": structures}
 
 
-# ---------- Public API ----------
+def _ensure_loaded() -> None:
+    if not _loaded:
+        raise RuntimeError(
+            "Pallet config not loaded. Call load_pallet_config() during startup."
+        )
+
+
+# -------------------------------------------------------------------
+# Public API
+# -------------------------------------------------------------------
 def load_pallet_config(
-    path: str | Path = ENV_DIR / "pallet_labels.json",
-    *,
-    logger: Optional[Logger] = None,
+    path: Optional[str | Path] = None, *, logger: Optional[Logger] = None
 ) -> PalletBlock:
     """
     Load and validate pallet label variables & structures into memory.
     """
-    global _pallet_config
-    file_path = _resolve_path(path)
-    raw = _read_json(file_path, ctx="pallet labels", logger=logger)
-    pallet_block = _extract_pallet_block(raw)
-    _pallet_config = _ensure_pallet_shape(pallet_block)
-    return _pallet_config
+    global _pallet_config, _loaded
+    with _LOCK:
+        file_path = _resolve_path(path)
+        raw = _read_json(file_path, ctx="pallet labels", logger=logger)
+        pallet_block = _extract_pallet_block(raw)
+        _pallet_config = _ensure_pallet_shape(pallet_block)
+        _loaded = True
+        return _pallet_config
 
 
 def get_pallet_variables() -> PalletVariables:
-    return _pallet_config["PALLETVARIABLES"]
+    _ensure_loaded()
+    return dict(_pallet_config["PALLETVARIABLES"])
 
 
 def list_pallet_label_names() -> List[str]:
+    _ensure_loaded()
     return sorted(_pallet_config["PALLETLABELSTRUCTURES"].keys())
 
 
 def get_pallet_label_lines(name: str) -> List[str]:
+    _ensure_loaded()
     try:
-        return _pallet_config["PALLETLABELSTRUCTURES"][name]
+        # return a copy
+        return list(_pallet_config["PALLETLABELSTRUCTURES"][name])
     except KeyError as e:
         raise KeyError(
             f"Pallet label structure '{name}' not found. Available: {', '.join(list_pallet_label_names())}"
@@ -156,29 +183,36 @@ def get_pallet_label_lines(name: str) -> List[str]:
 
 
 def get_pallet_label_zpl(name: str) -> str:
-    """
-    Return the full ZPL for a structure (joined with newlines).
-    """
+    """Return the full ZPL for a structure (joined with newlines)."""
     return "\n".join(get_pallet_label_lines(name))
+
+
+# -------------------------------------------------------------------
+# Validation helpers
+# -------------------------------------------------------------------
+_FN_RE = re.compile(r"\^FN(\d+)")
+
+
+def get_used_fn_numbers(name: str) -> Set[int]:
+    """
+    Return the set of ^FN numbers referenced by a named structure.
+    """
+    nums = {
+        int(m.group(1))
+        for line in get_pallet_label_lines(name)
+        for m in _FN_RE.finditer(line)
+    }
+    return nums
 
 
 def validate_fn_usage(name: str) -> None:
     """
     Ensure every ^FN<number> referenced in the label exists in PALLETVARIABLES.
     Lightweight static check; does not fully parse ZPL.
-
-    Raises:
-        ValueError: if the label references FN numbers not present in PALLETVARIABLES.
     """
-    import re
-
-    lines = get_pallet_label_lines(name)
-    fn_nums = {
-        int(m.group(1)) for line in lines for m in re.finditer(r"\^FN(\d+)", line)
-    }
+    fn_nums = get_used_fn_numbers(name)
     if not fn_nums:
         return
-
     vars_map = get_pallet_variables()
     valid_nums = set(vars_map.values())
     missing = sorted(fn_nums - valid_nums)
@@ -189,11 +223,16 @@ def validate_fn_usage(name: str) -> None:
         )
 
 
-# ---------- Debug helper ----------
+def validate_all_structures() -> None:
+    """Run validate_fn_usage for every structure."""
+    for name in list_pallet_label_names():
+        validate_fn_usage(name)
+
+
+# -------------------------------------------------------------------
+# Debug helper
+# -------------------------------------------------------------------
 def print_pallet_label(name: str, *, header: bool = True) -> None:
-    """
-    Print the joined ZPL to the console (useful during development).
-    """
     if header:
         print(f"--- ZPL for pallet label '{name}' ---")
     print(get_pallet_label_zpl(name))

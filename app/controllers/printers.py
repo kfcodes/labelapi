@@ -1,19 +1,14 @@
-# app/controllers/printers.py
 from __future__ import annotations
 
 import ipaddress
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, TypedDict
 
-from fastapi import Request
-
-# NEW: use the unified printers config accessors
-# at top:
-from .printer_json_readers import (  # make sure BOTH are imported
+from app.static_json_readers import (
     get_addresses,
     get_addresses_for_site,
     get_site_ranges,
-    load_printers_config,
 )
+from fastapi import Request
 
 
 class PrinterConn(TypedDict):
@@ -189,7 +184,6 @@ def get_all_printer_connections(
                 if valid:
                     results.append(valid)
 
-    # (optional) de-dupe identical ip:port combos
     seen = set()
     deduped: List[PrinterConn] = []
     for c in results:

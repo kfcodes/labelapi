@@ -7,17 +7,12 @@ from typing import Dict, List, Mapping, Tuple, Union
 from app.database.read_db import read_db, read_to_list_index
 from app.database.write_db import update_pallet_packing_list, write_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
+from app.static_json_readers import get_pallet_label_zpl, validate_fn_usage
 from app.zpl.pallet_label_zpl_logic import (
     create_combined_pallet_label_data,
     create_pallet_label_zpl,
 )
 from dotenv import load_dotenv
-
-from .pallet_json_readers import (
-    get_pallet_label_zpl,
-    load_pallet_config,
-    validate_fn_usage,
-)
 
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
 load_dotenv(BASE_DIR / "env" / "label_variables.env")

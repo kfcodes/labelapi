@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping, Optional, TypedDict
+from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Tuple, TypedDict
 
 # --------------------
 # Paths
@@ -34,10 +35,8 @@ AddressesMap = Dict[str, LineRoleMap]
 
 
 class PrintersConfig(TypedDict):
-    Ranges: Dict[str, IpRange]  # e.g. {"1": {"start": "...", "end": "..."}, ...}
-    Addresses: (
-        AddressesMap  # e.g. {"1": {"line1": {...}, "non_production": {...}}, ...}
-    )
+    Ranges: Dict[str, IpRange]  # {"1": {"start": "...", "end": "..."}}
+    Addresses: AddressesMap  # {"1": {"line1": {...}, "non_production": {...}}}
 
 
 # --------------------
@@ -45,18 +44,24 @@ class PrintersConfig(TypedDict):
 # --------------------
 _printers_config: PrintersConfig = {"Ranges": {}, "Addresses": {}}
 _loaded: bool = False
+_LAST_PATH: Optional[Path] = None
+_LAST_MTIME: Optional[float] = None
+_LOCK = threading.Lock()
 
 
 # --------------------
 # Path + IO utilities
 # --------------------
-def resolve_config_path(path: str | Path) -> Path:
+def resolve_config_path(path: Optional[str | Path]) -> Path:
     """
     Resolution rules:
+      - None: use DEFAULT_PATH
       - Absolute path: as-is
       - Starts with 'env/': relative to BASE_DIR
       - Otherwise: relative to ENV_DIR
     """
+    if path is None:
+        return DEFAULT_PATH
     p = Path(path)
     if p.is_absolute():
         return p
@@ -110,7 +115,7 @@ def _ensure_printers_config_shape(data: Any) -> PrintersConfig:
             )
         norm_ranges[str(site_id)] = {"start": start, "end": end}
 
-    # Normalize and lightly validate addresses
+    # Normalize and validate addresses
     norm_addrs: AddressesMap = {}
     for site_id, lines in addrs.items():
         if not isinstance(lines, Mapping):
@@ -131,6 +136,10 @@ def _ensure_printers_config_shape(data: Any) -> PrintersConfig:
                 if not isinstance(ip, str) or not isinstance(port, int):
                     raise ValueError(
                         f"Addresses['{site_id}']['{line_name}']['{role}'] must include ip:str and port:int"
+                    )
+                if not (1 <= port <= 65535):
+                    raise ValueError(
+                        f"Port out of range for Addresses['{site_id}']['{line_name}']['{role}']: {port}"
                     )
                 role_map[str(role)] = {"ip": ip, "port": port}
             site_line_map[str(line_name)] = role_map
@@ -157,48 +166,63 @@ def _ensure_loaded() -> None:
 # Public API
 # --------------------
 def load_printers_config(
-    path: str | Path = DEFAULT_PATH,
+    path: Optional[str | Path] = None,
     *,
     logger: Optional[Logger] = None,
 ) -> PrintersConfig:
     """
     Load the unified printers config (Ranges + Addresses) into memory.
     """
-    global _printers_config, _loaded
-    file_path = resolve_config_path(path)
-    raw = _read_json(file_path, error_context="printers", logger=logger)
-    _printers_config = _ensure_printers_config_shape(raw)
-    _loaded = True
-    return _printers_config
+    global _printers_config, _loaded, _LAST_PATH, _LAST_MTIME
+    with _LOCK:
+        file_path = resolve_config_path(path)
+        raw = _read_json(file_path, error_context="printers", logger=logger)
+        cfg = _ensure_printers_config_shape(raw)
+        _printers_config = cfg
+        _loaded = True
+        _LAST_PATH = file_path
+        try:
+            _LAST_MTIME = file_path.stat().st_mtime
+        except Exception:
+            _LAST_MTIME = None
+        return _printers_config
 
 
 def get_printers_config() -> PrintersConfig:
-    """Return the in-memory printers config. Call load_printers_config() at startup."""
+    """Return a copy of the in-memory printers config. Call load_printers_config() at startup."""
     _ensure_loaded()
-    return _printers_config
+    # shallow copy to avoid external mutation
+    return {
+        "Ranges": dict(_printers_config["Ranges"]),
+        "Addresses": dict(_printers_config["Addresses"]),
+    }
 
 
 def get_site_ranges() -> Dict[str, IpRange]:
     """Convenience accessor for Ranges (site-id keyed)."""
     _ensure_loaded()
-    return _printers_config["Ranges"]
+    return dict(_printers_config["Ranges"])
 
 
 def get_addresses() -> AddressesMap:
     """Convenience accessor for Addresses (site-id keyed)."""
     _ensure_loaded()
-    return _printers_config["Addresses"]
+    # shallow copy; nested dicts are still shared—keep callers read-only by convention
+    return {k: dict(v) for k, v in _printers_config["Addresses"].items()}
 
 
-def get_addresses_for_site(site_id: str) -> LineRoleMap:
+def get_addresses_for_site(site_id: str | int) -> LineRoleMap:
     """Return line/role map for a specific site-id. Raises KeyError if not found."""
     addrs = get_addresses()
-    if site_id not in addrs:
-        raise KeyError(f"Site '{site_id}' not found in addresses")
-    return addrs[site_id]
+    key = str(site_id)
+    if key not in addrs:
+        raise KeyError(
+            f"Site '{site_id}' not found in Addresses (known: {sorted(addrs.keys())})"
+        )
+    return dict(addrs[key])
 
 
-def get_pallet_label_printer_for_site(site_id: str) -> PrinterConn:
+def get_pallet_label_printer_for_site(site_id: str | int) -> PrinterConn:
     """Look up the non-production pallet label printer for a site."""
     site_map = get_addresses_for_site(site_id)
     non_prod = site_map.get("non_production") or {}
@@ -208,3 +232,43 @@ def get_pallet_label_printer_for_site(site_id: str) -> PrinterConn:
             f"non_production.pallet_label_printer missing for site '{site_id}'"
         )
     return {"ip": conn["ip"], "port": conn["port"]}
+
+
+# --------------------
+# Extra convenience helpers (pure; optional but handy)
+# --------------------
+def get_printer_conn(site_id: str | int, line_name: str, role: str) -> PrinterConn:
+    """
+    Return a PrinterConn for (site, line, role).
+    Raises KeyError with helpful context if any piece is missing.
+    """
+    site_map = get_addresses_for_site(site_id)
+    if line_name not in site_map:
+        raise KeyError(
+            f"Line '{line_name}' not found for site '{site_id}' (known: {sorted(site_map.keys())})"
+        )
+    role_map = site_map[line_name]
+    if role not in role_map:
+        raise KeyError(
+            f"Role '{role}' not found for site '{site_id}', line '{line_name}' (known: {sorted(role_map.keys())})"
+        )
+    conn = role_map[role]
+    return {"ip": conn["ip"], "port": conn["port"]}
+
+
+def iter_printer_connections() -> Iterator[Tuple[str, str, str, PrinterConn]]:
+    """
+    Yield (site_id, line_name, role, conn) for all configured printers.
+    Useful for diagnostics or building connection pools.
+    """
+    _ensure_loaded()
+    for site_id, lines in _printers_config["Addresses"].items():
+        for line_name, roles in lines.items():
+            for role, conn in roles.items():
+                yield site_id, line_name, role, {"ip": conn["ip"], "port": conn["port"]}
+
+
+# Debug metadata (read-only convenience)
+def get_last_loaded_meta() -> Tuple[Optional[Path], Optional[float]]:
+    """Return (path, mtime) of last successfully loaded printers.json."""
+    return _LAST_PATH, _LAST_MTIME

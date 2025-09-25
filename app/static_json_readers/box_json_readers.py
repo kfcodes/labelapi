@@ -1,16 +1,17 @@
-# box_json_reader.py
 from __future__ import annotations
 
 import json
 import re
+import threading
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Mapping, Optional, Set, TypedDict
 
 # -----------------------------------------------------------------------------
 # Paths
 # -----------------------------------------------------------------------------
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 ENV_DIR: Path = BASE_DIR / "env"
+DEFAULT_PATH: Path = ENV_DIR / "box_labels.json"
 
 Logger = Callable[[str], None]
 
@@ -35,6 +36,8 @@ class BoxBlock(TypedDict):
 # In-memory store
 # -----------------------------------------------------------------------------
 _box_config: BoxBlock = {"BOXLABELVARIABLES": {}, "BOXLABELSTRUCTURES": {}}
+_loaded: bool = False
+_LOCK = threading.Lock()
 
 # Matches placeholders like {brand}, {ean-13}, {product_group_and_weight}
 _PLACEHOLDER_RE = re.compile(r"\{([A-Za-z0-9_\-]+)\}")
@@ -43,13 +46,16 @@ _PLACEHOLDER_RE = re.compile(r"\{([A-Za-z0-9_\-]+)\}")
 # -----------------------------------------------------------------------------
 # Path & IO
 # -----------------------------------------------------------------------------
-def _resolve_path(path: str | Path) -> Path:
+def _resolve_path(path: Optional[str | Path]) -> Path:
     """
     Resolution rules:
+      - None: use DEFAULT_PATH
       - Absolute path: as-is
       - Starts with 'env/': relative to BASE_DIR
       - Otherwise: relative to ENV_DIR
     """
+    if path is None:
+        return DEFAULT_PATH
     p = Path(path)
     if p.is_absolute():
         return p
@@ -133,20 +139,25 @@ def _ensure_box_shape(box_block: Mapping[str, Any]) -> BoxBlock:
         if not isinstance(name, str):
             raise ValueError("Label structure names must be strings")
         if isinstance(lines, list) and all(isinstance(s, str) for s in lines):
-            structures[name] = lines
+            structures[name] = list(lines)  # copy
         else:
             raise ValueError(f"Label '{name}' must be an array of strings (ZPL lines)")
 
     return {"BOXLABELVARIABLES": variables, "BOXLABELSTRUCTURES": structures}
 
 
+def _ensure_loaded() -> None:
+    if not _loaded:
+        raise RuntimeError(
+            "Box config not loaded. Call load_box_config() during startup."
+        )
+
+
 # -----------------------------------------------------------------------------
 # Public API: load + getters
 # -----------------------------------------------------------------------------
 def load_box_config(
-    path: str | Path = ENV_DIR / "box_labels.json",
-    *,
-    logger: Optional[Logger] = None,
+    path: Optional[str | Path] = None, *, logger: Optional[Logger] = None
 ) -> BoxBlock:
     """
     Load and validate box label variables & structures into memory.
@@ -159,28 +170,33 @@ def load_box_config(
       }
     }
     """
-    global _box_config
-    file_path = _resolve_path(path)
-    raw = _read_json(file_path, ctx="box labels", logger=logger)
-    box_block = _extract_box_block(raw)
-    _box_config = _ensure_box_shape(box_block)
-    return _box_config
+    global _box_config, _loaded
+    with _LOCK:
+        file_path = _resolve_path(path)
+        raw = _read_json(file_path, ctx="box labels", logger=logger)
+        box_block = _extract_box_block(raw)
+        _box_config = _ensure_box_shape(box_block)
+        _loaded = True
+        return _box_config
 
 
 def get_box_variables() -> BoxVariables:
-    """Return the in-memory BOXLABELVARIABLES map (name -> FN number)."""
-    return _box_config["BOXLABELVARIABLES"]
+    """Return a copy of the BOXLABELVARIABLES map (name -> FN number)."""
+    _ensure_loaded()
+    return dict(_box_config["BOXLABELVARIABLES"])
 
 
 def list_box_label_names() -> List[str]:
     """List all available box label structure names."""
+    _ensure_loaded()
     return sorted(_box_config["BOXLABELSTRUCTURES"].keys())
 
 
 def get_box_label_lines(name: str) -> List[str]:
     """Get the ZPL lines for a given box label structure (with {placeholders})."""
+    _ensure_loaded()
     try:
-        return _box_config["BOXLABELSTRUCTURES"][name]
+        return list(_box_config["BOXLABELSTRUCTURES"][name])  # copy
     except KeyError as e:
         raise KeyError(
             f"Box label structure '{name}' not found. Available: {', '.join(list_box_label_names())}"
@@ -198,11 +214,21 @@ def get_box_label_zpl(name: str) -> str:
 def list_placeholders_in_label(name: str) -> List[str]:
     """Return all unique {placeholders} referenced in the label."""
     lines = get_box_label_lines(name)
-    found = set()
+    found: Set[str] = set()
     for line in lines:
         for m in _PLACEHOLDER_RE.finditer(line):
             found.add(m.group(1))
     return sorted(found)
+
+
+def list_missing_placeholders(name: str) -> List[str]:
+    """
+    Return placeholders used in the label that have no FN mapping.
+    (Non-throwing; useful for diagnostics/UIs)
+    """
+    placeholders = set(list_placeholders_in_label(name))
+    vars_map = get_box_variables()
+    return sorted(p for p in placeholders if p not in vars_map)
 
 
 def validate_placeholder_usage(name: str) -> None:
@@ -210,13 +236,11 @@ def validate_placeholder_usage(name: str) -> None:
     Ensure every {placeholder} used in the label exists in BOXLABELVARIABLES.
     Raises ValueError on mismatch.
     """
-    placeholders = set(list_placeholders_in_label(name))
-    vars_map = get_box_variables()
-    missing = sorted(p for p in placeholders if p not in vars_map)
+    missing = list_missing_placeholders(name)
     if missing:
         raise ValueError(
             f"Label '{name}' references placeholders with no FN mapping: {missing}. "
-            f"Defined variables: {sorted(vars_map.keys())}"
+            f"Defined variables: {sorted(get_box_variables().keys())}"
         )
 
 
@@ -240,10 +264,14 @@ def compile_box_label_to_fn(name: str) -> List[str]:
 
 
 def get_compiled_box_label_zpl(name: str) -> str:
-    """
-    Joined ZPL where ^FN{var} placeholders have been replaced with ^FN<number>.
-    """
+    """Joined ZPL where ^FN{var} placeholders have been replaced with ^FN<number>."""
     return "\n".join(compile_box_label_to_fn(name))
+
+
+def validate_all_structures() -> None:
+    """Run validate_placeholder_usage for every structure."""
+    for n in list_box_label_names():
+        validate_placeholder_usage(n)
 
 
 # -----------------------------------------------------------------------------

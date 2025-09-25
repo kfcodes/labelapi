@@ -6,14 +6,14 @@ from typing import Dict, Mapping, Optional, Tuple, Union
 
 from app.database.read_db import read_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
+from app.static_json_readers import get_compiled_box_label_zpl
+from app.static_json_readers import (
+    validate_placeholder_usage as validate_box_placeholder_usage,
+)
 from app.zpl.box_label_zpl_logic import create_box_label_zpl
 from dotenv import load_dotenv
 from fastapi import Request
 
-from .box_json_readers import get_compiled_box_label_zpl, load_box_config
-from .box_json_readers import (
-    validate_placeholder_usage as validate_box_placeholder_usage,
-)
 from .printers import PrinterConn, get_printers_for_site, resolve_site_id_from_request
 
 BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
