@@ -79,8 +79,6 @@ def load_all_config_data(
             "variables_count": len(pallet_vars),
             "structures": pallet_structs,
         },
-        # raw (if you ever need them)
-        # "raw": {"printers": printers_cfg, "box": box_cfg, "pallet": pallet_cfg},
     }
 
     if verbose:

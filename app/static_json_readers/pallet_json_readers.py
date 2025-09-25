@@ -188,6 +188,58 @@ def get_pallet_label_zpl(name: str) -> str:
 
 
 # -------------------------------------------------------------------
+# NEW: Placeholder helpers (swap {var} -> FN number)
+# -------------------------------------------------------------------
+def list_placeholders_in_label(name: str) -> list[str]:
+    """Return all unique {placeholders} referenced in the structure."""
+    lines = get_pallet_label_lines(name)
+    found: set[str] = set()
+    for line in lines:
+        for m in _PLACEHOLDER_RE.finditer(line):
+            found.add(m.group(1))
+    return sorted(found)
+
+
+def validate_placeholder_usage(name: str) -> None:
+    """
+    Ensure every {placeholder} used in the label exists in PALLETVARIABLES.
+    Raises ValueError on mismatch.
+    """
+    placeholders = set(list_placeholders_in_label(name))
+    vars_map = get_pallet_variables()
+    missing = sorted(p for p in placeholders if p not in vars_map)
+    if missing:
+        raise ValueError(
+            f"Label '{name}' references placeholders with no FN mapping: {missing}. "
+            f"Defined variables: {sorted(vars_map.keys())}"
+        )
+
+
+def compile_pallet_label_to_fn(name: str) -> list[str]:
+    """
+    Replace {placeholders} inside ^FN{var} with their numeric FN values (e.g., ^FN{pallet_id} -> ^FN1).
+    Returns a *new* list of lines; original remains unchanged.
+    """
+    vars_map = get_pallet_variables()
+
+    def repl(m: re.Match[str]) -> str:
+        var = m.group(1)
+        if var not in vars_map:
+            raise KeyError(f"Variable '{var}' not found in PALLETVARIABLES")
+        return str(vars_map[var])
+
+    compiled: list[str] = []
+    for line in get_pallet_label_lines(name):
+        compiled.append(_PLACEHOLDER_RE.sub(repl, line))
+    return compiled
+
+
+def get_compiled_pallet_label_zpl(name: str) -> str:
+    """Joined ZPL where ^FN{var} placeholders have been replaced with ^FN<number>."""
+    return "\n".join(compile_pallet_label_to_fn(name))
+
+
+# -------------------------------------------------------------------
 # Validation helpers
 # -------------------------------------------------------------------
 _FN_RE = re.compile(r"\^FN(\d+)")
@@ -232,9 +284,29 @@ def validate_all_structures() -> None:
 # -------------------------------------------------------------------
 # Debug helper
 # -------------------------------------------------------------------
-def print_pallet_label(name: str, *, header: bool = True) -> None:
+def print_pallet_label(
+    name: str, *, compiled: bool = True, header: bool = True
+) -> None:
+    """
+    Print the pallet label ZPL.
+
+    compiled=True  -> placeholders {var} are replaced by their FN numbers (^FN{var} -> ^FN<n>)
+    compiled=False -> print the raw structure (with placeholders intact)
+    """
     if header:
         print(f"--- ZPL for pallet label '{name}' ---")
-    print(get_pallet_label_zpl(name))
+
+    if compiled:
+        # optional safety: ensure every placeholder has a mapping
+        print("compiled")
+        validate_placeholder_usage(name)
+        print(get_compiled_pallet_label_zpl(name))
+    else:
+        print("NOT!! compiled")
+        print(get_pallet_label_zpl(name))
+
     if header:
         print("--- end ZPL ---")
+
+
+print_pallet_label("PALSTD1", compiled=True)

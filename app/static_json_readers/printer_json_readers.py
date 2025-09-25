@@ -52,7 +52,7 @@ _LOCK = threading.Lock()
 # --------------------
 # Path + IO utilities
 # --------------------
-def resolve_config_path(path: Optional[str | Path]) -> Path:
+def _resolve_path(path: Optional[str | Path]) -> Path:
     """
     Resolution rules:
       - None: use DEFAULT_PATH
@@ -175,7 +175,7 @@ def load_printers_config(
     """
     global _printers_config, _loaded, _LAST_PATH, _LAST_MTIME
     with _LOCK:
-        file_path = resolve_config_path(path)
+        file_path = _resolve_path(path)
         raw = _read_json(file_path, error_context="printers", logger=logger)
         cfg = _ensure_printers_config_shape(raw)
         _printers_config = cfg

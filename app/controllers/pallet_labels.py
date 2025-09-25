@@ -24,15 +24,12 @@ async def main_pallet_label_function(location, printer, pallet_id):
     `printer` is a dict like {"ip": "...", "port": 9100}.
     """
     try:
-        # get the label summary information and type id from the database
         label_summary_info = read_db(
             str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id))
         )[0]
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        # label_structure_name = f"{label_type_info[0]['pallet_label_name']}"
         label_structure_name = "PALSTD1"
 
-        # select the extra info method based on label type
         if int(label_type_info[0]["pallet_label_id"]) == 2:
             return  # blank summary only — nothing to print per original logic
         elif int(label_type_info[0]["pallet_label_id"]) == 3:
@@ -42,19 +39,16 @@ async def main_pallet_label_function(location, printer, pallet_id):
         else:
             extra_info = standard_pallet_label_extra_information(pallet_id)
 
-        # create the zpl string with the pallet information
         pallet_label_zpl = create_pallet_label_zpl(
             label_structure_name, label_summary_info, extra_info
         )
         print(pallet_label_zpl)
 
-        # send to printer
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]
         )
 
-        # update the pallet in the database to add it to packing list
-        update_pallet_packing_list(pallet_id, location)
+        # update_pallet_packing_list(pallet_id, location)
         return response
     except Exception as ex:
         print("Pallet label could not be created due to: \n", ex)

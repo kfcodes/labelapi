@@ -13,7 +13,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # If routes live at app/routes/__init__.py exporting `router`
     from .routes import router as api_router
 
     app.include_router(api_router)
@@ -21,5 +20,4 @@ def create_app() -> FastAPI:
     return app
 
 
-# Optional: also expose a module-level `app` so you can run without --factory
 app = create_app()
