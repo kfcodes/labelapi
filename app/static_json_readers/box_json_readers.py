@@ -142,3 +142,86 @@ def get_compiled_box_label_zpl(name: str) -> str:
 def validate_all_structures() -> None:
     for n in list_box_label_names():
         validate_placeholder_usage(n)
+
+
+def get_all_box_label_zpl(
+    *,
+    validate: bool = True,
+    ensure_xa_xz: bool = True,
+    ensure_utf8: bool = True,
+) -> str:
+    """
+    Build a single ZPL stream containing ALL box label structures.
+
+    - Validates each structure's placeholders and ^FN usage (if validate=True).
+    - Ensures each block has ^XA ... ^XZ (if ensure_xa_xz=True).
+    - Ensures UTF-8 (^CI28) once per block, right after ^XA (if ensure_utf8=True).
+
+    Returns:
+        One string with all ^XA...^XZ blocks concatenated in sorted name order.
+    """
+
+    # local, idempotent guards (so we don't depend on other modules)
+    def _ensure_has_xa_xz_block(zpl: str) -> str:
+        s = zpl.strip()
+        up = s.upper()
+        if not up.startswith("^XA"):
+            s = "^XA\n" + s
+            up = s.upper()
+        if not up.endswith("^XZ"):
+            s = s + "\n^XZ"
+        return s
+
+    def _prefer_utf8_block(zpl: str) -> str:
+        if "^CI28" in zpl.upper():
+            return zpl
+        head, sep, tail = zpl.partition("\n")
+        if head.upper().startswith("^XA"):
+            return f"{head}\n^FX UTF-8 ^CI28\n{tail}"
+        return "^CI28\n" + zpl
+
+    parts: list[str] = []
+    for name in sorted(list_box_label_names()):
+        if validate:
+            validate_placeholder_usage(name)
+            validate_fn_usage(name)
+
+        block = get_compiled_box_label_zpl(name)
+
+        if ensure_xa_xz:
+            block = _ensure_has_xa_xz_block(block)
+        if ensure_utf8:
+            block = _prefer_utf8_block(block)
+
+        parts.append(block)
+
+    return "\n".join(parts)
+
+
+_FN_RE = re.compile(r"\^FN(\d+)")
+
+
+def get_used_fn_numbers(name: str) -> Set[int]:
+    return {
+        int(m.group(1))
+        for line in get_box_label_lines(name)
+        for m in _FN_RE.finditer(line)
+    }
+
+
+def validate_fn_usage(name: str) -> None:
+    """
+    Ensures any explicit ^FN numbers in the template are present in BOXLABELVARIABLES.
+    If your templates never contain raw ^FN (only placeholders), this will usually be a no-op.
+    """
+    fn_nums = get_used_fn_numbers(name)
+    if not fn_nums:
+        return
+    vars_map = get_box_variables()
+    valid = set(vars_map.values())
+    missing = sorted(fn_nums - valid)
+    if missing:
+        raise ValueError(
+            f"Label '{name}' references ^FN numbers with no mapping: {missing}. "
+            f"Defined FN numbers: {sorted(valid)}"
+        )

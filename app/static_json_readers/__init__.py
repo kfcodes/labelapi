@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .box_json_readers import (
     compile_box_label_to_fn,
+    get_all_box_label_zpl,
     get_box_label_lines,
     get_box_label_zpl,
     get_box_variables,
@@ -24,7 +25,7 @@ from .pallet_json_readers import (
     validate_all_structures as validate_all_pallet_structures,
 )
 from .pallet_json_readers import validate_fn_usage
-from .printer_json_readers import (  # ensure this exists in printer_json_readers.py
+from .printer_json_readers import (
     get_addresses,
     get_addresses_for_site,
     get_all_printer_conns,
@@ -46,6 +47,7 @@ __all__ = [
     "list_placeholders_in_label",
     "validate_placeholder_usage",
     "validate_all_box_structures",
+    "get_all_box_label_zpl",
     # pallet
     "load_pallet_config",
     "get_pallet_variables",

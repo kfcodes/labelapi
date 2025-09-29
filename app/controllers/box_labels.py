@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Dict, Mapping, Optional, Tuple, Union
+from typing import Dict, List, Mapping, Optional, Tuple, Union
+
+from dotenv import load_dotenv
+from fastapi import Request
 
 from app.database.read_db import read_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
@@ -10,9 +13,8 @@ from app.static_json_readers import get_compiled_box_label_zpl
 from app.static_json_readers import (
     validate_placeholder_usage as validate_box_placeholder_usage,
 )
+from app.static_json_readers.box_json_readers import get_all_box_label_zpl
 from app.zpl.box_label_zpl_logic import create_box_label_zpl
-from dotenv import load_dotenv
-from fastapi import Request
 
 from .printers import PrinterConn, get_printers_for_site, resolve_site_id_from_request
 
@@ -129,40 +131,45 @@ async def main_print_box_label_function(
 
 
 async def upload_box_label_structures_to_printers(
-    printers: list[PrinterConn] | list[Dict[str, Union[str, int]]],
+    printers: List[Dict[str, Union[str, int]]],
     *,
-    label_name: str = "STD",
     dry_run: bool = True,
 ) -> str:
     """
-    Load the BOX label structure from JSON, compile placeholders to ^FN numbers,
-    and upload the structure ZPL (^DF...) to the given printers.
+    Compile ALL box label structures into one ZPL bundle and upload to each printer.
 
-    Params:
-        printers: list of {"ip": "...", "port": 9100}
-        label_name: structure key inside BOXLABELSTRUCTURES (e.g., "STD")
-        dry_run: if True, just print compiled ZPL and return it
+    Args:
+        printers: list like [{"ip": "192.168.1.42", "port": 9100}, ...]
+        dry_run:  if True, print the ZPL bundle and return it without sending
 
     Returns:
-        The compiled structure ZPL (string). If dry_run=False, also sends to printers.
+        The compiled ZPL bundle (if dry_run), otherwise newline-joined printer responses.
     """
-    # Ensure config is loaded and structure is valid
-    load_box_config()
-    validate_box_placeholder_usage(label_name)
-    compiled_template_zpl = get_compiled_box_label_zpl(label_name)
+    try:
+        # Build one ZPL stream containing ALL BOX structures, with validations/enforcers
+        zpl = get_all_box_label_zpl(validate=True)
 
-    if dry_run:
-        print(f"--- DRY RUN UPLOAD BOX STRUCTURE '{label_name}' ---")
-        for line in compiled_template_zpl.splitlines():
-            if line.strip():
-                print(line)
-        print("--- END STRUCTURE ---")
-        return compiled_template_zpl
+        if dry_run:
+            print("--- DRY RUN: BOX STRUCTURES ZPL BUNDLE ---")
+            print(zpl)
+            print("--- END DRY RUN ---")
+            return zpl
 
-    responses: list[str] = []
-    for p in printers:
-        ip = str(p["ip"])
-        port = int(p["port"])
-        resp = label_printer_connection(compiled_template_zpl, ip, port)
-        responses.append(str(resp))
-    return "\n".join(responses)
+        responses: List[str] = []
+        for p in printers:
+            ip = str(p["ip"])
+            port = int(p["port"])
+            try:
+                resp = label_printer_connection(zpl, ip, port)
+                print(f"synced to printer {ip}:{port}")
+                responses.append(str(resp))
+            except Exception as e:
+                msg = f"ERROR syncing to {ip}:{port} -> {e}"
+                print(msg)
+                responses.append(msg)
+
+        return "\n".join(responses)
+
+    except Exception as ex:
+        print("Box label structures could not be uploaded due to:\n", ex)
+        return f"Error: {ex}"
