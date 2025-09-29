@@ -7,22 +7,22 @@ def create_pallet_label_zpl(
     Build a pallet label from a stored template and fill summary fields + optional products list.
     Adjust ^FN numbers to match your actual printer template.
     """
+    label_type = "PALCOMBO"
     try:
         zpl_lines = [
             "^XA",
             f"^XFE:{label_type}.ZPL^FS",
         ]
-
         if label_summary_info:
             zpl_lines.extend(
                 [
                     f"^FN1^FD{label_summary_info.get('pallet_id', '')}^FS",
-                    f"^FN2^FD{int(label_summary_info.get('pallet_quantity', 0))}^FS",
-                    f"^FN3^FD{label_summary_info.get('gross_weight', '')}^FS",
+                    f"^FN2^FD{int(label_summary_info.get('pallet_qty', 0))}^FS",
+                    f"^FN3^FD{label_summary_info.get('pallet_weight', '')}^FS",
                     f"^FN4^FD{label_summary_info.get('pallet_dimensions', '')}^FS",
                     f"^FN5^FD{label_summary_info.get('combo_pallet_ids', '')}^FS",
-                    f"^FN6^FD{label_summary_info.get('gross_weight', '')}^FS",
-                    f"^FN7^FD{label_summary_info.get('gross_dimensions', '')}^FS",
+                    f"^FN6^FD{label_summary_info.get('gross_weight', 0)}^FS",
+                    f"^FN7^FD{label_summary_info.get('gross_dimensions', 0)}^FS",
                 ]
             )
 
@@ -36,22 +36,6 @@ def create_pallet_label_zpl(
         return ""
 
 
-def create_combined_pallet_label_data(combined_summary: dict, combined_ids: str) -> str:
-    """
-    Simple combined pallet label that also prints the combined IDs.
-    Uses the same ^FN mappings as create_pallet_label_zpl and adds ^FN8 for IDs.
-    """
-    label_type = "PALCOMBO"
-    zpl_lines = f"""^XA
-        ^XFE:{label_type}.ZPL^FS
-        ^FN3^FD{str(combined_ids)}^FS
-        ^FN1^FD{int(combined_summary.get('gross_weight', 0))}^FS
-        ^FN2^FD{int(combined_summary.get('gross_height', 0))}^FS
-        ^XZ"""
-
-    return zpl_lines
-
-
 def add_products_to_label(pallet_products: list[dict]) -> str:
     """
     Render the (up to) first 7 product lines onto the label body.
@@ -60,7 +44,6 @@ def add_products_to_label(pallet_products: list[dict]) -> str:
     try:
         zpl = ""
 
-        # "More than 6" => mixed pallet
         if len(pallet_products) > 6:
             zpl += "^FO350,420^A0,22^FDMIXED PALLET^FS"
         else:

@@ -5,7 +5,7 @@ from app.controllers import blend_label_function  # internal label controller
 internal_label_router = APIRouter()
 
 
-@internal_label_router.post("/blend")
+@internal_label_router.post("/blend_label")
 async def print_blend_label(request: Request):
     try:
         try:
