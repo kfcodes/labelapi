@@ -13,6 +13,7 @@ from .box_json_readers import (
 from .box_json_readers import validate_all_structures as validate_all_box_structures
 from .box_json_readers import validate_placeholder_usage
 from .pallet_json_readers import (
+    get_all_pallet_label_zpl,
     get_pallet_label_lines,
     get_pallet_label_zpl,
     get_pallet_variables,
@@ -23,8 +24,6 @@ from .pallet_json_readers import (
     validate_all_structures as validate_all_pallet_structures,
 )
 from .pallet_json_readers import validate_fn_usage
-
-# Printers readers
 from .printer_json_readers import (  # ensure this exists in printer_json_readers.py
     get_addresses,
     get_addresses_for_site,
@@ -55,6 +54,7 @@ __all__ = [
     "get_pallet_label_zpl",
     "validate_fn_usage",
     "validate_all_pallet_structures",
+    "get_all_pallet_label_zpl",
     # printers
     "load_printers_config",
     "get_printers_config",

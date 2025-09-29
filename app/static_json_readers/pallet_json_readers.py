@@ -160,3 +160,57 @@ def validate_fn_usage(name: str) -> None:
 def validate_all_structures() -> None:
     for n in list_pallet_label_names():
         validate_fn_usage(n)
+
+
+def get_all_pallet_label_zpl(
+    *,
+    validate: bool = True,
+    ensure_xa_xz: bool = True,
+    ensure_utf8: bool = True,
+) -> str:
+    """
+    Build a single ZPL stream containing ALL pallet label structures.
+
+    - Validates each structure's placeholders and ^FN usage (if validate=True).
+    - Ensures each block has ^XA ... ^XZ (if ensure_xa_xz=True).
+    - Ensures UTF-8 (^CI28) once per block, right after ^XA (if ensure_utf8=True).
+
+    Returns:
+        One string with all ^XA...^XZ blocks concatenated in sorted name order.
+    """
+
+    def _ensure_has_xa_xz_block(zpl: str) -> str:
+        s = zpl.strip()
+        up = s.upper()
+        if not up.startswith("^XA"):
+            s = "^XA\n" + s
+            up = s.upper()
+        if not up.endswith("^XZ"):
+            s = s + "\n^XZ"
+        return s
+
+    def _prefer_utf8_block(zpl: str) -> str:
+        # Idempotent: if already present, leave as-is
+        if "^CI28" in zpl.upper():
+            return zpl
+        head, sep, tail = zpl.partition("\n")
+        if head.upper().startswith("^XA"):
+            return f"{head}\n^FX UTF-8 ^CI28\n{tail}"
+        return "^CI28\n" + zpl
+
+    parts: list[str] = []
+    for name in sorted(list_pallet_label_names()):
+        if validate:
+            validate_placeholder_usage(name)
+            validate_fn_usage(name)
+
+        block = get_compiled_pallet_label_zpl(name)
+
+        if ensure_xa_xz:
+            block = _ensure_has_xa_xz_block(block)
+        if ensure_utf8:
+            block = _prefer_utf8_block(block)
+
+        parts.append(block)
+
+    return "\n".join(parts)

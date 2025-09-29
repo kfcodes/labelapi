@@ -4,17 +4,22 @@ import os
 from pathlib import Path
 from typing import Dict, List, Mapping, Tuple, Union
 
+from dotenv import load_dotenv
+
 from app.database.read_db import read_db, read_to_list_index
 from app.database.write_db import update_pallet_packing_list, write_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
-from app.static_json_readers import get_pallet_label_zpl, validate_fn_usage
+from app.static_json_readers import (
+    get_all_pallet_label_zpl,
+    get_pallet_label_zpl,
+    validate_fn_usage,
+)
 from app.zpl.pallet_label_zpl_logic import (
     create_combined_pallet_label_data,
     create_pallet_label_zpl,
 )
-from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
+BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
 
 
@@ -102,7 +107,6 @@ async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list
 
 
 def standard_pallet_label_extra_information(pallet_id):
-    # get the pallet item information from DB
     pallet_contents = read_db(
         f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}"
     )
@@ -111,7 +115,6 @@ def standard_pallet_label_extra_information(pallet_id):
 
 
 def standard_pallet_label_with_product_skus_extra_information(pallet_id):
-    # get the pallet item information from DB
     pallet_contents = read_db(
         f"{os.getenv('GETPRODUCTSONPALLET1')} {int(pallet_id)} {os.getenv('GETPRODUCTSONPALLET2')}"
     )
@@ -119,44 +122,46 @@ def standard_pallet_label_with_product_skus_extra_information(pallet_id):
     return pallet_contents
 
 
-def upload_pallet_label_data_to_printers(
+def upload_pallet_label_structures_to_printers(
     printers: List[Dict[str, Union[str, int]]],
     *,
-    label_name: str = "PALSTD1",
     dry_run: bool = True,
 ) -> str:
     """
-    Compile the pallet label structure (e.g., 'PALSTD1') and upload it to each printer.
+    Compile ALL pallet label structures into one ZPL bundle and upload to each printer.
 
     Args:
         printers: list of {"ip": "...", "port": 9100}
-        label_name: key in PALLETLABELSTRUCTURES to upload
-        dry_run: if True, only print the ZPL to console and return it
+        dry_run:  if True, print the ZPL bundle and return it without sending
 
     Returns:
-        The compiled ZPL string (if dry_run), otherwise newline-joined printer responses.
+        The compiled ZPL bundle (if dry_run), otherwise newline-joined printer responses.
     """
     try:
-        load_pallet_config()
-        validate_fn_usage(label_name)
-
-        zpl = get_pallet_label_zpl(label_name)
+        # Build one ZPL stream containing ALL pallet structures (validates each)
+        zpl = get_all_pallet_label_zpl(validate=True)
 
         if dry_run:
-            print(f"--- DRY RUN UPLOAD PALLET STRUCTURE '{label_name}' ---")
-            for line in zpl.splitlines():
-                if line.strip():
-                    print(line)
-            print("--- END STRUCTURE ---")
+            print("--- DRY RUN: PALLET STRUCTURES ZPL BUNDLE ---")
+            print(zpl)
+            print("--- END DRY RUN ---")
             return zpl
 
         responses: List[str] = []
         for p in printers:
             ip = str(p["ip"])
             port = int(p["port"])
-            resp = label_printer_connection(zpl, ip, port)
-            responses.append(str(resp))
+            try:
+                resp = label_printer_connection(zpl, ip, port)
+                print(f"synced to printer {ip}:{port}")
+                responses.append(str(resp))
+            except Exception as e:
+                msg = f"ERROR syncing to {ip}:{port} -> {e}"
+                print(msg)
+                responses.append(msg)
+
         return "\n".join(responses)
+
     except Exception as ex:
-        print("Pallet label structure could not be uploaded due to: \n", ex)
+        print("Pallet label structures could not be uploaded due to:\n", ex)
         return f"Error: {ex}"
