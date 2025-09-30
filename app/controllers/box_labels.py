@@ -4,9 +4,6 @@ import os
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
-from dotenv import load_dotenv
-from fastapi import Request
-
 from app.database.read_db import read_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.static_json_readers import get_compiled_box_label_zpl
@@ -15,6 +12,8 @@ from app.static_json_readers import (
 )
 from app.static_json_readers.box_json_readers import get_all_box_label_zpl
 from app.zpl.box_label_zpl_logic import create_box_label_zpl
+from dotenv import load_dotenv
+from fastapi import Request
 
 from .printers import PrinterConn, get_printers_for_site, resolve_site_id_from_request
 
@@ -128,48 +127,3 @@ async def main_print_box_label_function(
         zpl_string, conn["ip"], conn["port"], timeout=timeout
     )
     return response
-
-
-async def upload_box_label_structures_to_printers(
-    printers: List[Dict[str, Union[str, int]]],
-    *,
-    dry_run: bool = True,
-) -> str:
-    """
-    Compile ALL box label structures into one ZPL bundle and upload to each printer.
-
-    Args:
-        printers: list like [{"ip": "192.168.1.42", "port": 9100}, ...]
-        dry_run:  if True, print the ZPL bundle and return it without sending
-
-    Returns:
-        The compiled ZPL bundle (if dry_run), otherwise newline-joined printer responses.
-    """
-    try:
-        # Build one ZPL stream containing ALL BOX structures, with validations/enforcers
-        zpl = get_all_box_label_zpl(validate=True)
-
-        if dry_run:
-            print("--- DRY RUN: BOX STRUCTURES ZPL BUNDLE ---")
-            print(zpl)
-            print("--- END DRY RUN ---")
-            return zpl
-
-        responses: List[str] = []
-        for p in printers:
-            ip = str(p["ip"])
-            port = int(p["port"])
-            try:
-                resp = label_printer_connection(zpl, ip, port)
-                print(f"synced to printer {ip}:{port}")
-                responses.append(str(resp))
-            except Exception as e:
-                msg = f"ERROR syncing to {ip}:{port} -> {e}"
-                print(msg)
-                responses.append(msg)
-
-        return "\n".join(responses)
-
-    except Exception as ex:
-        print("Box label structures could not be uploaded due to:\n", ex)
-        return f"Error: {ex}"
