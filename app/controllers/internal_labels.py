@@ -15,10 +15,7 @@ from app.static_json_readers import (
     get_pallet_label_zpl,
     validate_fn_usage,
 )
-from app.zpl.pallet_label_zpl_logic import (
-    create_combined_pallet_label_data,
-    create_pallet_label_zpl,
-)
+from app.zpl.pallet_label_zpl_logic import create_pallet_label_zpl
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
