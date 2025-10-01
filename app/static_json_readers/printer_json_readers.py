@@ -5,10 +5,6 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, Typ
 
 from .json_reader_core import ENV_DIR, JsonConfigLoader
 
-# =========================
-# Types
-# =========================
-
 Logger = Callable[[str], None]
 
 
@@ -31,9 +27,9 @@ class PrintersConfig(TypedDict):
     Addresses: AddressesMap
 
 
-# =========================
-# Validation helpers
-# =========================
+# =============================
+# Validation helper functions
+# =============================
 
 
 def _require_mapping(value: Any, *, ctx: str) -> Mapping[str, Any]:
@@ -80,7 +76,7 @@ def _validate_printer_conn(
 
 
 # =========================
-# Top-level validator
+# Main validator function
 # =========================
 
 
@@ -145,16 +141,15 @@ _loader = JsonConfigLoader[PrintersConfig](
     validator=_validate_printers,
 )
 
-
-# =========================
-# Public API
-# =========================
+# ===============================
+# Publicly Accessable Functions
+# ===============================
 
 
 def load_printers_config(
     path: Optional[str | Path] = None, *, logger: Optional[Logger] = None
 ) -> PrintersConfig:
-    """Load and cache the printers config (use during startup)."""
+    """Load and cache the printers config (during startup)."""
     return _loader.load(path, logger=logger)
 
 

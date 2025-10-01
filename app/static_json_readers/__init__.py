@@ -14,8 +14,9 @@ from .box_json_readers import (
 from .box_json_readers import validate_all_structures as validate_all_box_structures
 from .box_json_readers import validate_placeholder_usage
 from .pallet_json_readers import (
+    build_single_pallet_label_zpl,
     get_all_pallet_label_zpl,
-    get_pallet_label_lines,
+    get_compiled_pallet_label_zpl,
     get_pallet_label_zpl,
     get_pallet_variables,
     list_pallet_label_names,
@@ -24,7 +25,6 @@ from .pallet_json_readers import (
 from .pallet_json_readers import (
     validate_all_structures as validate_all_pallet_structures,
 )
-from .pallet_json_readers import validate_fn_usage
 from .printer_json_readers import (
     get_addresses,
     get_addresses_for_site,
@@ -52,9 +52,9 @@ __all__ = [
     "load_pallet_config",
     "get_pallet_variables",
     "list_pallet_label_names",
-    "get_pallet_label_lines",
     "get_pallet_label_zpl",
-    "validate_fn_usage",
+    "get_compiled_pallet_label_zpl",
+    "build_single_pallet_label_zpl",
     "validate_all_pallet_structures",
     "get_all_pallet_label_zpl",
     # printers
