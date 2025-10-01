@@ -18,9 +18,9 @@ from app.static_json_readers import (
     validate_all_pallet_structures,
 )
 from app.static_json_readers.box_json_readers import get_compiled_box_label_zpl
-from app.static_json_readers.pallet_json_readers import get_compiled_pallet_label_zpl
 from app.static_json_readers.pallet_json_readers import (
-    validate_placeholder_usage as validate_pallet_placeholders,
+    get_compiled_pallet_label_zpl,
+    validate_pallet_label,
 )
 
 Logger = Callable[[str], None]
@@ -178,7 +178,7 @@ def render_label_previews(
     for name in sorted(list_pallet_label_names()):
         try:
             try:
-                validate_pallet_placeholders(name)
+                validate_pallet_label(name)
             except Exception as ve:
                 log(f"[WARN] Placeholder validation failed for '{name}': {ve}")
 

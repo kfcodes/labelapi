@@ -6,6 +6,8 @@ from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.static_json_readers.box_json_readers import get_all_box_label_zpl
 from app.static_json_readers.pallet_json_readers import get_all_pallet_label_zpl
 
+# from app.static_json_readers.internal_json_readers import get_all_pallet_label_zpl
+
 Printer = Dict[str, Union[str, int]]
 Logger = Callable[[str], None]
 
