@@ -1,9 +1,10 @@
+from fastapi import APIRouter, HTTPException, Request
+
 from app.controllers import (
     generate_and_print_combo_label,
     get_pallet_label_printer,
     main_pallet_label_function,
 )
-from fastapi import APIRouter, HTTPException, Request
 
 pallet_label_router = APIRouter()
 
@@ -12,7 +13,6 @@ pallet_label_router = APIRouter()
 async def print_pallet_label(pallet_id: int, request: Request):
     try:
         printer, site = await get_pallet_label_printer(request)
-        print(printer, site)
         resp = await main_pallet_label_function(site, printer, pallet_id)
         return {"status": "ok", "response": resp}
     except Exception as e:
@@ -34,7 +34,6 @@ async def print_combined_pallet_label(request: Request):
 
         pallet_list = tuple(body["pallet_list"])
         height = int(body["height"])
-        # choose a primary pallet id (here: max of list as in your original)
         pallet_id = int(max(pallet_list))
 
         resp = await generate_and_print_combo_label(
