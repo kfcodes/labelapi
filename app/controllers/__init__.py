@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from .box_labels import main_print_box_label_function
 from .config_loader import load_all_config_data
-from .internal_labels import blank_pallet_labels, blend_label_function
+from .internal_labels import (
+    blank_pallet_labels,
+    internal_product_id_and_description,
+    large_blend_label_function,
+    small_blend_label_function,
+)
 from .label_structure_uploader import (
     upload_box_label_structures_to_printers,
     upload_internal_label_structures_to_printers,
@@ -25,7 +30,9 @@ __all__ = [
     # startup
     "load_all_config_data",
     # internal
-    "blend_label_function",
+    "internal_product_id_and_description",
+    "large_blend_label_function",
+    "small_blend_label_function",
     "blank_pallet_labels",
     # box
     "main_print_box_label_function",
