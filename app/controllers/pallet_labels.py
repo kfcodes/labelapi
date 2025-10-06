@@ -74,10 +74,14 @@ async def main_pallet_label_function(location, printer, pallet_id):
         print("Pallet label could not be created due to:\n", ex)
 
 
-async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list):
+async def generate_and_print_combo_label(
+    printer, pallet_id, combined_dimensions, pallet_list
+):
     try:
         write_db(
-            str(os.getenv("COMBINEPALLETDATA")).format(pallet_id, height, pallet_list)
+            str(os.getenv("COMBINEPALLETDATA")).format(
+                pallet_id, combined_dimensions, pallet_list
+            )
         )
         label_structure_name = "PALCOMBO"
 
@@ -88,8 +92,16 @@ async def generate_and_print_combo_label(printer, pallet_id, height, pallet_list
         summary = combined_rows[0] if combined_rows else {}
 
         payload = make_pallet_label_payload(
-            summary, overrides={"combo_pallet_ids": ids}
+            summary,
+            overrides={
+                "combo_pallet_ids": ids,
+                "combined_weight": int(summary["gross_weight"]),
+                "combined_dimensions": int(summary["gross_height"]),
+            },
         )
+        # print("payload")
+        # print(payload)
+
         zpl = create_pallet_label_zpl(
             label_structure_name, payload, extra_info=None, copies=1
         )

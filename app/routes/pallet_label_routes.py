@@ -33,11 +33,11 @@ async def print_combined_pallet_label(request: Request):
         printer, _site = await get_pallet_label_printer(request)
 
         pallet_list = tuple(body["pallet_list"])
-        height = int(body["height"])
+        combined_dimensions = int(body["combined_dimensions"])
         pallet_id = int(max(pallet_list))
 
         resp = await generate_and_print_combo_label(
-            printer, pallet_id, height, pallet_list
+            printer, pallet_id, combined_dimensions, pallet_list
         )
         return {"status": "ok", "response": resp}
     except KeyError as e:
