@@ -1,5 +1,3 @@
-from fastapi import APIRouter, HTTPException, Request
-
 from app.controllers import (
     blank_pallet_labels,
     get_pallet_label_printer,
@@ -7,6 +5,7 @@ from app.controllers import (
     large_blend_label_function,
     small_blend_label_function,
 )
+from fastapi import APIRouter, HTTPException, Request
 
 internal_label_router = APIRouter()
 

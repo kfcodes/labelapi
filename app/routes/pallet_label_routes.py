@@ -9,7 +9,7 @@ from app.controllers import (
 pallet_label_router = APIRouter()
 
 
-@pallet_label_router.get("/print_pallet_label/{pallet_id}")
+@pallet_label_router.post("/print_pallet_label/{pallet_id}")
 async def print_pallet_label(pallet_id: int, request: Request):
     try:
         printer, site = await get_pallet_label_printer(request)
