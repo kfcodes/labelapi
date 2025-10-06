@@ -1,3 +1,5 @@
+from fastapi import APIRouter, HTTPException, Request
+
 from app.controllers import (
     blank_pallet_labels,
     get_pallet_label_printer,
@@ -5,7 +7,6 @@ from app.controllers import (
     large_blend_label_function,
     small_blend_label_function,
 )
-from fastapi import APIRouter, HTTPException, Request
 
 internal_label_router = APIRouter()
 
@@ -13,11 +14,10 @@ internal_label_router = APIRouter()
 @internal_label_router.post("/large_bulk_blend_label")
 async def large_bulk_blend_label(request: Request):
     try:
-        try:
-            printer, site = await get_pallet_label_printer(request)
-            body = await request.json()
-        except Exception:
-            body = {}
+        body = await request.json()
+        printer, _site = await get_pallet_label_printer(request)
+
+        print(body)
 
         resp = await large_blend_label_function(body, printer)
 

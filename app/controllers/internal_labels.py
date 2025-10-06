@@ -50,9 +50,11 @@ async def internal_product_id_and_description(product_id, quantity, printer):
 async def large_blend_label_function(body, printer):
     try:
         label_structure_name = "INTLBLND"
+        print(body)
         pallet_label_zpl = create_blend_label_zpl(
             label_structure_name, body["blend_id"], body["allergens"]
         )
+        print(pallet_label_zpl)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]
         )
