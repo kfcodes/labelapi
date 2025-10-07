@@ -1,3 +1,5 @@
+from fastapi import APIRouter, HTTPException
+
 from app.controllers import (
     get_all_printer_connections,
     load_all_config_data,
@@ -5,7 +7,6 @@ from app.controllers import (
     upload_internal_label_structures_to_printers,
     upload_pallet_label_structures_to_printers,
 )
-from fastapi import APIRouter, HTTPException
 
 label_utility_router = APIRouter()
 

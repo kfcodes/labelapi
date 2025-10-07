@@ -4,6 +4,9 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.static_json_readers.box_json_readers import get_all_box_label_zpl
+from app.static_json_readers.internal_label_json_readers import (
+    get_all_internal_label_zpl,
+)
 from app.static_json_readers.pallet_json_readers import get_all_pallet_label_zpl
 
 # from app.static_json_readers.internal_json_readers import get_all_pallet_label_zpl
@@ -50,7 +53,7 @@ def _upload_bundle_to_printers(
 def upload_pallet_label_structures_to_printers(
     printers: List[Printer],
     *,
-    dry_run: bool = True,
+    dry_run: bool = False,
     logger: Optional[Logger] = print,
 ) -> str:
     """
@@ -69,7 +72,7 @@ def upload_pallet_label_structures_to_printers(
 def upload_internal_label_structures_to_printers(
     printers: List[Printer],
     *,
-    dry_run: bool = True,
+    dry_run: bool = False,
     logger: Optional[Logger] = print,
 ) -> str:
     """
@@ -77,7 +80,7 @@ def upload_internal_label_structures_to_printers(
     Change to a different generator if internal labels differ.
     """
     try:
-        zpl = get_all_pallet_label_zpl(validate=True)
+        zpl = get_all_internal_label_zpl(validate=True)
         return _upload_bundle_to_printers(zpl, printers, dry_run=dry_run, logger=logger)
     except Exception as ex:
         (logger or print)(

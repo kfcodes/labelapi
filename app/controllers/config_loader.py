@@ -12,10 +12,13 @@ from app.static_json_readers import (
     list_box_label_names,
     list_pallet_label_names,
     load_box_config,
+    load_ipallet_config,
     load_pallet_config,
     load_printers_config,
     validate_all_box_structures,
     validate_all_pallet_structures,
+    validate_ipallet_label,
+    validate_pallet_label,
 )
 from app.static_json_readers.box_json_readers import get_compiled_box_label_zpl
 from app.static_json_readers.pallet_json_readers import (
@@ -93,6 +96,7 @@ def load_all_config_data(
     printers_path: Optional[str | Path] = None,
     box_path: Optional[str | Path] = None,
     pallet_path: Optional[str | Path] = None,
+    internal_path: Optional[str | Path] = None,
     strict_validate: bool = False,
     logger: Optional[Logger] = None,
 ) -> None:
@@ -101,8 +105,10 @@ def load_all_config_data(
     load_printers_config(printers_path or None, logger=log)
     load_box_config(box_path or None, logger=log)
     load_pallet_config(pallet_path or None, logger=log)
+    load_ipallet_config(internal_path or None, logger=log)
 
     if strict_validate:
+        validate_ipallet_label()
         validate_all_box_structures()
         validate_all_pallet_structures()
 
