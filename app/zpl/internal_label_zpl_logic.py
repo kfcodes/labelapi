@@ -20,8 +20,8 @@ def create_blend_label_zpl(
     return (
         "^XA\n"
         f"^XFE:{label_structure_name}.ZPL^FS\n"
-        f"^FN1^FD{blend_id}^FS\n"
-        f"^FN2^FD{allergens}^FS\n"
+        f"^FN3^FD{blend_id}^FS\n"
+        f"^FN4^FD{allergens}^FS\n"
         "^XZ"
     )
 
