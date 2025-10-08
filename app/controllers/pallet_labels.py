@@ -49,6 +49,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
         summary = read_db(str(f"{os.getenv('PALLETSUMMARY')}").format(int(pallet_id)))[
             0
         ]
+        summary["pallet_quantity"] = int(summary["pallet_quantity"])
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
         label_structure_name = "PALSTD"  # or derive from label_type_info if needed
 
