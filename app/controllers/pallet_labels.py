@@ -50,7 +50,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
             0
         ]
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        label_structure_name = "PALSTD1"  # or derive from label_type_info if needed
+        label_structure_name = "PALSTD"  # or derive from label_type_info if needed
 
         if int(label_type_info[0]["pallet_label_id"]) == 2:
             return  # blank summary only
@@ -67,8 +67,9 @@ async def main_pallet_label_function(location, printer, pallet_id):
         )
         print(zpl)
 
+        update_pallet_packing_list(pallet_id, location)
         resp = label_printer_connection(zpl, printer["ip"], printer["port"])
-        # update_pallet_packing_list(pallet_id, location)
+
         return resp
     except Exception as ex:
         print("Pallet label could not be created due to:\n", ex)
@@ -99,8 +100,6 @@ async def generate_and_print_combo_label(
                 "combined_dimensions": int(summary["gross_height"]),
             },
         )
-        # print("payload")
-        # print(payload)
 
         zpl = create_pallet_label_zpl(
             label_structure_name, payload, extra_info=None, copies=1

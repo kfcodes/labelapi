@@ -74,10 +74,9 @@ def create_pallet_label_zpl(
 def _add_products_block(pallet_products: Sequence[Mapping[str, Any]]) -> str:
     out: list[str] = []
 
-    # tweak to your layout (^FOx,y with x first)
-    x_qty = 350
-    x_desc = 480
-    y_positions = [230, 260, 290, 320, 350, 380, 410]
+    x_qty = 430
+    x_desc = 500
+    y_positions = [410, 380, 350, 320, 290, 260, 230]
     font_cmd = "^A0,22"
 
     products = list(pallet_products)
@@ -97,7 +96,7 @@ def _add_products_block(pallet_products: Sequence[Mapping[str, Any]]) -> str:
             .replace("^", " ")
             .replace("~", " ")
         )
-        out.append(f"^FO{x_qty},{y}{font_cmd}^FD{total_i}^FS")
-        out.append(f"^FO{x_desc},{y}{font_cmd}^FD{desc}^FS")
+        out.append(f"^FO{y},{x_qty}{font_cmd}^FD{total_i}^FS")
+        out.append(f"^FO{y},{x_desc}{font_cmd}^FD{desc}^FS")
 
     return "\n".join(out)
