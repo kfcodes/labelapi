@@ -172,3 +172,4 @@ cython_debug/
 
 Dockerfile
 docker-compose.*
+update.sh
