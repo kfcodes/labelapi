@@ -70,7 +70,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
         )
         print(zpl)
 
-        # update_pallet_packing_list(pallet_id, location)
+        update_pallet_packing_list(pallet_id, location)
         resp = label_printer_connection(zpl, printer["ip"], printer["port"])
 
         return resp
