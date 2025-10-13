@@ -33,7 +33,7 @@ async def print_combined_pallet_label(request: Request):
         printer, _site = await get_pallet_label_printer(request)
 
         pallet_list = tuple(body["pallet_list"])
-        combined_dimensions = int(body["combined_dimensions"])
+        combined_dimensions = int(body["height"])
         pallet_id = int(max(pallet_list))
 
         resp = await generate_and_print_combo_label(
