@@ -21,7 +21,7 @@ load_dotenv(BASE_DIR / "env" / "label_variables.env")
 async def internal_product_id_and_description(product_id, quantity, printer):
     try:
 
-        label_structure_name = "INTLPREP"
+        label_structure_name = "IN_CODE_AND_DESCRIPTION"
 
         product_description = read_to_list_index(
             str(os.getenv("GETPRODUCTDESCRIPTION")).format(product_id)
@@ -49,7 +49,7 @@ async def internal_product_id_and_description(product_id, quantity, printer):
 
 async def large_blend_label_function(body, printer):
     try:
-        label_structure_name = "INTLBULK"
+        label_structure_name = "IN_BULK_ID_ALLERGENS_LARGE"
         print(body)
         pallet_label_zpl = create_blend_label_zpl(
             label_structure_name, body["blend_id"], body["allergens"]
@@ -66,7 +66,7 @@ async def large_blend_label_function(body, printer):
 
 async def small_blend_label_function(printer):
     try:
-        label_structure_name = "INTSBULK"
+        label_structure_name = "IN_MICRO_BULK_BAG_ID"
         pallet_label_zpl = create_blank_label_zpl(label_structure_name)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]
@@ -79,7 +79,7 @@ async def small_blend_label_function(printer):
 
 async def blank_pallet_labels(printer):
     try:
-        label_structure_name = "INTLPLBK"
+        label_structure_name = "IN_INTERMEDIATE_PALLET"
         pallet_label_zpl = create_blank_label_zpl(label_structure_name)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]

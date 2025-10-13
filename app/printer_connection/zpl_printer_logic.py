@@ -6,9 +6,9 @@ def label_printer_connection(
 ) -> dict:
     try:
         label = zpl_string.encode(encoding="ascii", errors="ignore")
-        # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as mysocket:
-        #     mysocket.connect((printer_address, printer_port))
-        #     mysocket.send(label)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as mysocket:
+            mysocket.connect((printer_address, printer_port))
+            mysocket.send(label)
         print(label)
         return {
             "status": "success",

@@ -54,7 +54,7 @@ def create_pallet_label_zpl(
         "^XA",
         "^CI28",
         f"^XFE:{label_type}.ZPL^FS",  # call stored format by name
-        f"^PQ{max(int(copies), 1)}",  # copies, minimum 1
+        # f"^PQ{max(int(copies), 1)}",  # copies, minimum 1
     ]
 
     # Inject values in a deterministic order (sorted by FN number)

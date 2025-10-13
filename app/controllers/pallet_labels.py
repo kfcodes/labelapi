@@ -36,7 +36,7 @@ def make_pallet_label_payload(
 
 async def print_blank_pallet_labels(printer):
     try:
-        label_structure_name = "PALBLNK"
+        label_structure_name = "PALLET_STANDARD"
         zpl = create_pallet_label_zpl(label_structure_name, {})  # no values
         print(zpl)
         return label_printer_connection(zpl, printer["ip"], printer["port"])
@@ -51,7 +51,9 @@ async def main_pallet_label_function(location, printer, pallet_id):
         ]
         summary["pallet_quantity"] = int(summary["pallet_quantity"])
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        label_structure_name = "PALSTD"  # or derive from label_type_info if needed
+        label_structure_name = (
+            "PALLET_STANDARD"  # or derive from label_type_info if needed
+        )
 
         if int(label_type_info[0]["pallet_label_id"]) == 2:
             return  # blank summary only
@@ -68,7 +70,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
         )
         print(zpl)
 
-        update_pallet_packing_list(pallet_id, location)
+        # update_pallet_packing_list(pallet_id, location)
         resp = label_printer_connection(zpl, printer["ip"], printer["port"])
 
         return resp
@@ -85,7 +87,7 @@ async def generate_and_print_combo_label(
                 pallet_id, combined_dimensions, pallet_list
             )
         )
-        label_structure_name = "PALCOMBO"
+        label_structure_name = "PALLET_COMBINED"
 
         ids = str(pallet_list).replace("(", "").replace(")", "").replace("'", "")
         combined_rows = read_to_list_index(
