@@ -4,14 +4,13 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Tuple, Union
 
-from dotenv import load_dotenv
-
 from app.database.read_db import read_db, read_to_list_index
 from app.database.write_db import update_pallet_packing_list, write_db
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.static_json_readers import get_all_pallet_label_zpl, get_pallet_label_zpl
 from app.static_json_readers.pallet_json_readers import get_pallet_variables
 from app.zpl.pallet_label_zpl_logic import create_pallet_label_zpl
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
@@ -51,9 +50,7 @@ async def main_pallet_label_function(location, printer, pallet_id):
         ]
         summary["pallet_quantity"] = int(summary["pallet_quantity"])
         label_type_info = read_db(str(f"{os.getenv('PALLETLABELTYPE')}"))
-        label_structure_name = (
-            "PALLET_STANDARD"  # or derive from label_type_info if needed
-        )
+        label_structure_name = "PALSTD"  # or derive from label_type_info if needed
 
         if int(label_type_info[0]["pallet_label_id"]) == 2:
             return  # blank summary only
@@ -83,7 +80,7 @@ async def generate_and_print_combo_label(
 ):
     try:
         write_db(
-            str(os.getenv("COMBINEPALLETDATA")).format(
+            str(os.getenv("PALCOMBO")).format(
                 pallet_id, combined_dimensions, pallet_list
             )
         )

@@ -4,8 +4,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Tuple, Union
 
-from dotenv import load_dotenv
-
 from app.database.read_db import read_db, read_to_list_index
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 from app.zpl.internal_label_zpl_logic import (
@@ -13,6 +11,7 @@ from app.zpl.internal_label_zpl_logic import (
     create_blend_label_zpl,
     create_id_with_description,
 )
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
@@ -21,7 +20,7 @@ load_dotenv(BASE_DIR / "env" / "label_variables.env")
 async def internal_product_id_and_description(product_id, quantity, printer):
     try:
 
-        label_structure_name = "IN_CODE_AND_DESCRIPTION"
+        label_structure_name = "IN_DESCR"
 
         product_description = read_to_list_index(
             str(os.getenv("GETPRODUCTDESCRIPTION")).format(product_id)
@@ -49,7 +48,7 @@ async def internal_product_id_and_description(product_id, quantity, printer):
 
 async def large_blend_label_function(body, printer):
     try:
-        label_structure_name = "IN_BULK_ID_ALLERGENS_LARGE"
+        label_structure_name = "IN_BULK"
         print(body)
         pallet_label_zpl = create_blend_label_zpl(
             label_structure_name, body["blend_id"], body["allergens"]
@@ -66,7 +65,7 @@ async def large_blend_label_function(body, printer):
 
 async def small_blend_label_function(printer):
     try:
-        label_structure_name = "IN_MICRO_BULK_BAG_ID"
+        label_structure_name = "IN_MICRO"
         pallet_label_zpl = create_blank_label_zpl(label_structure_name)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]
@@ -79,7 +78,7 @@ async def small_blend_label_function(printer):
 
 async def blank_pallet_labels(printer):
     try:
-        label_structure_name = "IN_INTERMEDIATE_PALLET"
+        label_structure_name = "IN_PBLNK"
         pallet_label_zpl = create_blank_label_zpl(label_structure_name)
         response = label_printer_connection(
             pallet_label_zpl, printer["ip"], printer["port"]
