@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
+# These DB accessors should each perform a SINGLE DB query and return
+# all needed data in one go (no additional DB calls from this controller).
+#
+# a_get_box_label_data_by_finished_id:
+#   input:  unique_finished_product_id: int
+#   output: Optional[BoxLabelData]
+#
+# a_get_box_label_metadata_by_product_code:
+#   input:  product_id: str
+#   output: Optional[BoxLabelMetadata]
 from app.database import (
-    a_get_brand_id_for_product as get_brand_id_for_product,
-)  # product_id: str -> Optional[int]
+    a_get_box_label_data_by_finished_id as get_box_label_data_by_finished_id,
+)
 from app.database import (
-    a_get_label_context_for_brand as get_required_fields_for_label,
-)  # brand_id: int -> Optional[dict]
-from app.database import (
-    a_get_required_eol_values as get_finished_product_details,
-)  # (eol_id: int, keys: List[str]) -> Dict[str, Any]
+    a_get_box_label_metadata_by_product_code as get_box_label_metadata_by_product_code,
+)
 
 
 class LabelTypeContext(TypedDict, total=False):
@@ -19,75 +26,66 @@ class LabelTypeContext(TypedDict, total=False):
     company_name: str
     label_type_id: int
     zpl_name: str
-    size_is_large: int
+    size_is_large: int  # 1 = large, 0 = small
     label_fields: List[str]
     barcode_formats: List[str]
 
 
-async def get_brand_id(product_id: str) -> Dict[str, Any]:
+class BoxLabelData(TypedDict):
     """
-    Resolve the brand/company id for a given product_id (string).
-    Returns: {"ok": bool, "errors": List[str], "brand_id": Optional[int]}
+    Shape of the data returned by get_box_label_data_by_finished_id.
+
+    Adapt keys to whatever your DB function returns, but keep enough information
+    here to build the label and determine size.
     """
-    result: Dict[str, Any] = {"ok": False, "errors": [], "brand_id": None}
-    brand_id = await get_brand_id_for_product(product_id)
-    if brand_id is None:
-        result["errors"].append(f"No brand/company found for product_id={product_id}.")
-        return result
-    result["ok"] = True
-    result["brand_id"] = int(brand_id)
-    return result
+
+    # Identity / linkage
+    finished_product_id: int
+    brand_id: int
+    eol_id: int
+    batch_id: str
+
+    # Label configuration
+    label_context: LabelTypeContext
+    required_fields: List[str]
+
+    # Actual values for those fields (already fetched from EOL/product tables)
+    values: Dict[str, Any]
 
 
-async def get_label_fields(brand_id: int) -> Dict[str, Any]:
+class BoxLabelMetadata(TypedDict, total=False):
     """
-    Given a brand/company id (int), fetch the label/type context and return fields.
-    Returns:
-      {
-        "ok": bool,
-        "errors": List[str],
-        "fields": List[str],            # required label fields (ordered, deduped)
-        "context": LabelTypeContext|{}, # passthrough (optional)
-      }
+    Lightweight metadata shape for the /check/{product_id} endpoint.
+
+    You can expand this as needed, as long as it comes from a single DB call.
     """
-    out: Dict[str, Any] = {"ok": False, "errors": [], "fields": [], "context": {}}
 
-    ctx: Optional[LabelTypeContext] = await get_required_fields_for_label(brand_id)
-    if not ctx:
-        out["errors"].append(f"No label context found for brand_id={brand_id}.")
-        return out
-
-    # Preserve order, dedupe
-    seen = set()
-    fields = [
-        k for k in (ctx.get("label_fields") or []) if not (k in seen or seen.add(k))
-    ]
-
-    out["ok"] = True
-    out["fields"] = fields
-    out["context"] = ctx
-    return out
+    product_id: str
+    brand_id: int
+    label_context: LabelTypeContext
+    required_fields: List[str]
 
 
-async def generate_label_structure(
+# ---------------------------------------------------------------------------
+# Pure helpers – no DB calls
+# ---------------------------------------------------------------------------
+
+
+def _build_label_structure_from_values(
     *,
     required_fields: List[str],
+    values: Dict[str, Any],
     eol_id: int,
     batch_id: str,
-) -> str:
+) -> Dict[str, Any]:
     """
-    Build the label structure string (JSON) by projecting only the requested fields
-    from EOL, merging batch_id/lot, and reporting any missing fields.
-    Returns a STRING suitable for printing to console.
-    """
-    # Get only what the label actually requires
-    eol_values: Dict[str, Any] = await get_finished_product_details(
-        eol_id, required_fields
-    )
+    Build the label structure dict using ONLY the values already provided.
 
-    # Compose working record (batch/lot are merged but NOT required)
+    No database access here – everything must come from the single DB call.
+    """
+    # Compose working record: merge values + batch/lot (not required)
     record: Dict[str, Any] = {
-        **eol_values,
+        **values,
         "batch_id": batch_id,
         "lot": batch_id,
     }
@@ -101,35 +99,124 @@ async def generate_label_structure(
         "inputs": {"eol_id": eol_id, "batch_id": batch_id},
         "required_fields": required_fields,
         "values": {k: record.get(k) for k in required_fields},  # only requireds
-        "extras": {"batch_id": batch_id, "lot": batch_id},  # exposed for downstream
+        "extras": {"batch_id": batch_id, "lot": batch_id},
     }
+    return structure
 
-    # Return as a pretty JSON string for direct console printing
-    return json.dumps(structure, indent=2, ensure_ascii=False)
+
+def _derive_label_size_from_context(context: LabelTypeContext) -> str:
+    """
+    Decide label_size string from the label context.
+
+    Uses size_is_large if present; otherwise falls back to "default".
+    """
+    size_is_large = context.get("size_is_large")
+    if size_is_large is None:
+        return "default"
+    return "large" if int(size_is_large) == 1 else "small"
+
+
+# ---------------------------------------------------------------------------
+# MAIN: single-call controller used by the /box_label/{id}/{qty} route
+# ---------------------------------------------------------------------------
 
 
 async def main_box_label_function(
-    *,
-    product_id: int,
-    eol_id: int,
-    batch_id: str,
-) -> str:
+    unique_finished_product_id: int,
+) -> Tuple[str, str]:
     """
-    Main function:
-      1) fetch fields from product_id
-      2) generate label structure with eol_id + batch_id
-      3) print and return the JSON string
-    """
-    step1 = await get_label_fields(product_id)
-    if not step1["ok"]:
-        s = json.dumps(step1, indent=2, ensure_ascii=False)
-        print(s)
-        return s
+    Main box label generator.
 
-    s = await generate_label_structure(
-        required_fields=step1["fields"],
+    INPUT:
+        unique_finished_product_id: internal finished product id (int)
+
+    Single DB call:
+        - get_box_label_data_by_finished_id(unique_finished_product_id)
+
+    OUTPUT:
+        (label_size, label_text)
+
+        - label_size: string label size identifier ("large" | "small" | "default" | etc.)
+        - label_text: full label payload for a SINGLE label
+                      (currently JSON string; you can swap to ZPL if you want)
+    """
+
+    # SINGLE DB CALL – returns all necessary information as a dict.
+    data: Optional[BoxLabelData] = await get_box_label_data_by_finished_id(
+        unique_finished_product_id
+    )
+
+    if data is None:
+        raise ValueError(
+            f"No box label data found for finished_product_id={unique_finished_product_id}"
+        )
+
+    # Unpack the single DB result
+    eol_id: int = data["eol_id"]
+    batch_id: str = data["batch_id"]
+    required_fields: List[str] = data["required_fields"]
+    values: Dict[str, Any] = data["values"]
+    context: LabelTypeContext = data["label_context"]
+
+    # Build the label structure purely from the data we already have.
+    structure = _build_label_structure_from_values(
+        required_fields=required_fields,
+        values=values,
         eol_id=eol_id,
         batch_id=batch_id,
     )
-    print(s)
-    return s
+
+    # Convert structure to a string (this is your "label_text").
+    # If you'd prefer ZPL, you'd replace this with a ZPL builder.
+    label_text = json.dumps(structure, indent=2, ensure_ascii=False)
+
+    # Derive label_size (large/small/default, etc.) from the context
+    label_size = _derive_label_size_from_context(context)
+
+    # Return tuple in the order the router expects
+    return label_size, label_text
+
+
+# ---------------------------------------------------------------------------
+# CHECK: single-call metadata lookup for /check/{product_id}
+# ---------------------------------------------------------------------------
+
+
+async def check_box_label_exists(
+    product_id: str,
+) -> Optional[Dict[str, Any]]:
+    """
+    Check whether label information exists for a given *string* product_id.
+
+    SINGLE DB CALL:
+        - get_box_label_metadata_by_product_code(product_id)
+
+    Returns:
+        dict with info if label config exists, or None if not.
+
+        Example response:
+        {
+          "product_id": "...",
+          "brand_id": 123,
+          "fields": [...],
+          "label_size": "large" | "small" | "default",
+          "context": {...}
+        }
+    """
+    meta: Optional[BoxLabelMetadata] = await get_box_label_metadata_by_product_code(
+        product_id
+    )
+    if meta is None:
+        return None
+
+    required_fields: List[str] = meta.get("required_fields", [])
+    context: LabelTypeContext = meta.get("label_context", {})  # type: ignore[assignment]
+    label_size = _derive_label_size_from_context(context)
+
+    return {
+        "product_id": product_id,
+        "brand_id": int(meta["brand_id"]),
+        "fields": required_fields,
+        "label_size": label_size,
+        "context": context,
+    }
