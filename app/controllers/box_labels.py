@@ -3,21 +3,10 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
-# from app.database import (
-#     a_get_box_label_data_by_finished_id as get_box_label_data_by_finished_id,
-# )
-from app.database import get_box_label_metadata_by_product_code
-
-# These DB accessors should each perform a SINGLE DB query and return
-# all needed data in one go (no additional DB calls from this controller).
-#
-# a_get_box_label_data_by_finished_id:
-#   input:  unique_finished_product_id: int
-#   output: Optional[BoxLabelData]
-#
-# a_get_box_label_metadata_by_product_code:
-#   input:  product_id: str
-#   output: Optional[BoxLabelMetadata]
+from app.database import (
+    get_box_label_metadata_by_product_code,
+    get_unique_box_label_info,
+)
 
 
 class LabelTypeContext(TypedDict, total=False):

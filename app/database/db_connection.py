@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-BASE_DIR = Path(__file__).resolve().parents[1]  # -> app/
+BASE_DIR = Path(__file__).resolve().parents[1]
 ENV_FILE = BASE_DIR / "env" / "db.env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE, override=False)

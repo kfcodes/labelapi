@@ -1,5 +1,4 @@
 import pandas as pd
-
 from app.database.db_connection import db
 
 
