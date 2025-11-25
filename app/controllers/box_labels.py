@@ -9,56 +9,6 @@ from app.database import (
 )
 
 
-class LabelTypeContext(TypedDict, total=False):
-    company_id: int
-    company_name: str
-    label_type_id: int
-    zpl_name: str
-    size_is_large: int  # 1 = large, 0 = small
-    label_fields: List[str]
-    barcode_formats: List[str]
-
-
-class BoxLabelData(TypedDict):
-    """
-    Shape of the data returned by get_box_label_data_by_finished_id.
-
-    Adapt keys to whatever your DB function returns, but keep enough information
-    here to build the label and determine size.
-    """
-
-    # Identity / linkage
-    finished_product_id: int
-    brand_id: int
-    eol_id: int
-    batch_id: str
-
-    # Label configuration
-    label_context: LabelTypeContext
-    required_fields: List[str]
-
-    # Actual values for those fields (already fetched from EOL/product tables)
-    values: Dict[str, Any]
-
-
-class BoxLabelMetadata(TypedDict, total=False):
-    """
-    Lightweight metadata shape for the /check/{product_id} endpoint.
-
-    You can expand this as needed, as long as it comes from a single DB call.
-    """
-
-    product_id: str
-    brand_id: int
-    label_context: LabelTypeContext
-    required_fields: List[str]
-
-
-# ---------------------------------------------------------------------------
-# Pure helpers – no DB calls
-# ---------------------------------------------------------------------------
-
-
 def _build_label_structure_from_values(
     *,
     required_fields: List[str],
@@ -104,11 +54,6 @@ def _derive_label_size_from_context(context: LabelTypeContext) -> str:
     return "large" if int(size_is_large) == 1 else "small"
 
 
-# ---------------------------------------------------------------------------
-# MAIN: single-call controller used by the /box_label/{id}/{qty} route
-# ---------------------------------------------------------------------------
-
-
 async def main_box_label_function(
     unique_finished_product_id: int,
 ) -> Tuple[str, str]:
@@ -130,7 +75,7 @@ async def main_box_label_function(
     """
 
     # SINGLE DB CALL – returns all necessary information as a dict.
-    data: Optional[BoxLabelData] = await get_box_label_data_by_finished_id(
+    data: Optional[BoxLabelData] = await get_unique_box_label_info(
         unique_finished_product_id
     )
 
@@ -163,14 +108,6 @@ async def main_box_label_function(
 
     # Return tuple in the order the router expects
     return label_size, label_text
-
-
-# ---------------------------------------------------------------------------
-# CHECK: single-call metadata lookup for /check/{product_id}
-# ---------------------------------------------------------------------------
-
-
-from typing import Optional
 
 
 async def check_box_label_exists(product_id: str) -> str:
