@@ -8,8 +8,6 @@ def read_db(selection: str):
     Returns a dict indexed by row number -> row dict
     (matches existing callers that do .values()).
     """
-    print("SELECTION")
-    print(selection)
     try:
         info = pd.read_sql(selection, db())
         return info.to_dict(orient="index")

@@ -3,6 +3,11 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
+# from app.database import (
+#     a_get_box_label_data_by_finished_id as get_box_label_data_by_finished_id,
+# )
+from app.database import get_box_label_metadata_by_product_code
+
 # These DB accessors should each perform a SINGLE DB query and return
 # all needed data in one go (no additional DB calls from this controller).
 #
@@ -13,12 +18,6 @@ from typing import Any, Dict, List, Optional, Tuple, TypedDict
 # a_get_box_label_metadata_by_product_code:
 #   input:  product_id: str
 #   output: Optional[BoxLabelMetadata]
-from app.database import (
-    a_get_box_label_data_by_finished_id as get_box_label_data_by_finished_id,
-)
-from app.database import (
-    a_get_box_label_metadata_by_product_code as get_box_label_metadata_by_product_code,
-)
 
 
 class LabelTypeContext(TypedDict, total=False):
@@ -182,41 +181,15 @@ async def main_box_label_function(
 # ---------------------------------------------------------------------------
 
 
-async def check_box_label_exists(
-    product_id: str,
-) -> Optional[Dict[str, Any]]:
+from typing import Optional
+
+
+async def check_box_label_exists(product_id: str) -> str:
     """
-    Check whether label information exists for a given *string* product_id.
-
-    SINGLE DB CALL:
-        - get_box_label_metadata_by_product_code(product_id)
-
-    Returns:
-        dict with info if label config exists, or None if not.
-
-        Example response:
-        {
-          "product_id": "...",
-          "brand_id": 123,
-          "fields": [...],
-          "label_size": "large" | "small" | "default",
-          "context": {...}
-        }
+    Returns only the box label description for the given product_id.
     """
-    meta: Optional[BoxLabelMetadata] = await get_box_label_metadata_by_product_code(
-        product_id
-    )
+    meta = await get_box_label_metadata_by_product_code(product_id)
     if meta is None:
         return None
 
-    required_fields: List[str] = meta.get("required_fields", [])
-    context: LabelTypeContext = meta.get("label_context", {})  # type: ignore[assignment]
-    label_size = _derive_label_size_from_context(context)
-
-    return {
-        "product_id": product_id,
-        "brand_id": int(meta["brand_id"]),
-        "fields": required_fields,
-        "label_size": label_size,
-        "context": context,
-    }
+    return meta.get("product_description")
