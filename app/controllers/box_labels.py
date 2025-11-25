@@ -3,10 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
-from app.database import (
-    get_box_label_metadata_by_product_code,
-    get_unique_box_label_info,
-)
+from app.database import (get_box_label_metadata_by_product_code,
+                          get_unique_box_label_info)
 
 
 def _build_label_structure_from_values(
@@ -110,11 +108,11 @@ async def main_box_label_function(
     return label_size, label_text
 
 
-async def check_box_label_exists(product_id: str) -> str:
+async def check_box_label_exists(product_ids: list) -> str:
     """
     Returns only the box label description for the given product_id.
     """
-    meta = await get_box_label_metadata_by_product_code(product_id)
+    meta = await get_box_label_metadata_by_product_code(product_ids)
     if meta is None:
         return None
 
