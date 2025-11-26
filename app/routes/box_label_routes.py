@@ -2,15 +2,24 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel, ConfigDict, Field, conint
+from pydantic import BaseModel, ConfigDict, Field, conint, constr
 
-from app.controllers.box_labels import (check_box_label_exists,
-                                        main_box_label_function)
-from app.controllers.printers import \
-    get_printers_on_site  # async, takes Request
+from app.controllers.box_labels import check_box_label_exists, main_box_label_function
+from app.controllers.printers import get_printers_on_site  # async, takes Request
 from app.printer_connection.zpl_printer_logic import label_printer_connection
 
 box_label_router = APIRouter()
+
+# Type for a single product ID: starts with a letter, then letters/digits, max length 60
+ProductID = constr(
+    min_length=1,
+    max_length=60,
+    pattern=r"^[A-Za-z][A-Za-z0-9]{0,59}$",
+)
+
+
+class BoxLabelCheckRequest(BaseModel):
+    product_ids: List[ProductID]
 
 
 @box_label_router.post("/box_label/{unique_finished_product_id}/{quantity}")
@@ -90,7 +99,6 @@ async def print_box_label(
             "status": "ok",
             "response": "resp",
         }
-
     except HTTPException:
         raise
     except ValueError as e:
@@ -105,17 +113,17 @@ async def print_box_label(
         ) from e
 
 
-@box_label_router.get("/check")
-async def box_label_check(
-    product_ids: List[str] = Query(..., alias="product_id")
-) -> Dict[str, Any]:
+@box_label_router.post("/check")
+async def box_label_check(body: BoxLabelCheckRequest) -> Dict[str, Any]:
+    product_ids = body.product_ids
+
     if not product_ids:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail="At least one product_id must be provided.",
         )
     try:
-        info = await check_box_label_exists(product_ids)
+        info = await check_box_label_exists(tuple(product_ids))
         if not info:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,

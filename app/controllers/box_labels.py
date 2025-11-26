@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
-from box_label_json_reader import get_box_variables  # <- this is the key one
-
-from app.database import (get_box_label_metadata_by_product_code,
-                          get_unique_box_label_info)
-from app.static_json_readers.box_label_json_reader import get_box_variables
+from app.database import (
+    get_box_label_metadata_by_product_code,
+    get_unique_box_label_info,
+)
+from app.static_json_readers import get_box_variables
 
 
 def _build_label_object_string(values: Dict[str, Any]) -> str:
@@ -20,6 +20,7 @@ def _build_label_object_string(values: Dict[str, Any]) -> str:
         value_str = "" if raw_value is None else str(raw_value)
         parts.append(f"FN{fn_number}FD{value_str}FS")
     return "".join(parts)
+
 
 def _label_is_large(value: int | bool | str) -> str:
     if isinstance(value, str):
@@ -48,7 +49,7 @@ async def main_box_label_function(
             f"No box label data found for finished_product_id={unique_finished_product_id}"
         )
 
-     label_text_zpl = _build_label_object_string(data)
+    label_text_zpl = _build_label_object_string(data)
 
     label_text = json.dumps(label_text_zpl, indent=2, ensure_ascii=False)
 
@@ -58,11 +59,14 @@ async def main_box_label_function(
 
 
 async def check_box_label_exists(product_ids: list) -> str:
-    """
-    Returns only the box label description for the given product_id.
-    """
     meta = await get_box_label_metadata_by_product_code(product_ids)
     if meta is None:
         return None
 
-    return meta.get("product_description")
+    print(meta)
+    # print(meta.get("product_description"))
+    return meta[0].get("product_description")
+
+    # return {
+    #     product_id: meta.get("product_description") for product_id, meta in info.items()
+    # }
