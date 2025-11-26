@@ -31,6 +31,7 @@ async def get_unique_box_label_info(
 ) -> Optional[dict]:
 
     unique_label_data = str(f"{os.getenv('UNIQUE_DATA')}")
+    # print(unique_label_data.format(int(blend_id), int(unique_finished_product_id)))
 
     data = (
         read_db(
