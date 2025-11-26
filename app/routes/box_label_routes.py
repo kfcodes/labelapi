@@ -22,20 +22,30 @@ class BoxLabelCheckRequest(BaseModel):
     product_ids: List[ProductID]
 
 
-@box_label_router.post("/box_label/{unique_finished_product_id}/{quantity}")
+class PrintBoxLabelRequest(BaseModel):
+    unique_finished_product_id: int
+    blend_id: int
+    quantity: int
+
+
+@box_label_router.post("/box_label")
 async def print_box_label(
     request: Request,
-    unique_finished_product_id: int,
-    quantity: int,
+    body: PrintBoxLabelRequest,
 ) -> Dict[str, Any]:
+    unique_finished_product_id = body.unique_finished_product_id
+    blend_id = body.blend_id
+    quantity = body.quantity
+
+    if quantity <= 0:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Quantity must be greater than zero.",
+        )
+
     try:
-        if quantity <= 0:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail="Quantity must be greater than zero.",
-            )
         label_size, label_zpl = await main_box_label_function(
-            unique_finished_product_id
+            unique_finished_product_id, blend_id, quantity
         )
 
         # # 3) Resolve printers for the caller's site
@@ -97,8 +107,13 @@ async def print_box_label(
 
         return {
             "status": "ok",
-            "response": "resp",
+            "data": {
+                "label_size": label_size,
+                "label_zpl": label_zpl,
+                # "quantity": quantity,
+            },
         }
+
     except HTTPException:
         raise
     except ValueError as e:
