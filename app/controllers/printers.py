@@ -3,12 +3,13 @@ from __future__ import annotations
 import ipaddress
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, TypedDict
 
+from fastapi import Request
+
 from app.static_json_readers import (
     get_addresses,
     get_addresses_for_site,
     get_site_ranges,
 )
-from fastapi import Request
 
 
 class PrinterConn(TypedDict):

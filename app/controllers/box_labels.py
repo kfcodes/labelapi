@@ -57,7 +57,7 @@ def _label_is_large(value: int | bool | str) -> str:
         is_large = False
     else:
         raise ValueError(f"Invalid size flag: {value!r}. Expected 1/0 or True/False.")
-    return "Large" if is_large else "Small"
+    return "large" if is_large else "small"
 
 
 async def main_box_label_function(
