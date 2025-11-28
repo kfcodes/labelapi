@@ -7,6 +7,7 @@ from app.controllers import (
     upload_internal_label_structures_to_printers,
     upload_pallet_label_structures_to_printers,
 )
+from app.database import get_box_label_variables
 
 label_utility_router = APIRouter()
 
@@ -14,6 +15,7 @@ label_utility_router = APIRouter()
 @label_utility_router.on_event("startup")
 def startup():
     load_all_config_data(logger=print)
+    get_box_label_variables()
 
 
 @label_utility_router.post("/sync_label_structures")
