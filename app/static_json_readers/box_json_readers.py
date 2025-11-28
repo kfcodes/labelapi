@@ -3,19 +3,24 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Set, TypedDict
+from typing import Any, Callable, Dict, List, Mapping, Optional, Set, TypedDict
+
+# DB function that returns {placeholder_name: fn_number}
+# Adjust the import path to wherever you defined it.
+from app.database import get_box_label_variables as get_box_label_variables_from_db
 
 from .json_reader_core import ENV_DIR, JsonConfigLoader
 
 # ---------------------------------------------------------------------------
-# Type aliases
+# Types
 # ---------------------------------------------------------------------------
 
 BoxVariables = Dict[str, int]
 BoxLabelStructures = Dict[str, List[str]]
 
 
-class BoxBlock(TypedDict):
+class BoxBlock(TypedDict, total=False):
+    # BOXLABELVARIABLES is optional at JSON level; we now fill it from DB.
     BOXLABELVARIABLES: BoxVariables
     BOXLABELSTRUCTURES: BoxLabelStructures
 
@@ -29,24 +34,16 @@ _FN_RE = re.compile(r"\^FN(\d+)")
 
 
 # ---------------------------------------------------------------------------
-# Json loader helpers
+# JSON loader: only *requires* BOXLABELSTRUCTURES
 # ---------------------------------------------------------------------------
 
 
 def _extract_box_block(data: Any) -> Mapping[str, Any]:
     """
     Accept either:
-      {
-        "BOX": {
-          "BOXLABELVARIABLES": {...},
-          "BOXLABELSTRUCTURES": {...}
-        }
-      }
+      { "BOX": { ... } }
     or:
-      {
-        "BOXLABELVARIABLES": {...},
-        "BOXLABELSTRUCTURES": {...}
-      }
+      { "BOXLABELSTRUCTURES": {...}, ... }
     and return the inner block.
     """
     if not isinstance(data, Mapping):
@@ -58,36 +55,21 @@ def _extract_box_block(data: Any) -> Mapping[str, Any]:
             raise TypeError("'BOX' must be an object")
         return box
 
-    if "BOXLABELVARIABLES" in data and "BOXLABELSTRUCTURES" in data:
+    if "BOXLABELSTRUCTURES" in data:
         return data
 
     raise TypeError(
-        "Config must contain a 'BOX' object or both 'BOXLABELVARIABLES' and "
-        "'BOXLABELSTRUCTURES' at root"
+        "Config must contain a 'BOX' object or a 'BOXLABELSTRUCTURES' object at root"
     )
 
 
 def _validate_box(box_block: Mapping[str, Any]) -> BoxBlock:
-    # Validate variables
-    vars_any = box_block.get("BOXLABELVARIABLES")
-    if not isinstance(vars_any, Mapping):
-        raise TypeError("'BOXLABELVARIABLES' must be an object")
-
-    variables: BoxVariables = {}
-    for key, value in vars_any.items():
-        if not isinstance(key, str):
-            raise ValueError("All BOXLABELVARIABLES keys must be strings")
-
-        if isinstance(value, int):
-            variables[key] = value
-        elif isinstance(value, str) and value.isdigit():
-            variables[key] = int(value)
-        else:
-            raise ValueError(
-                f"Variable '{key}' value must be an int (or numeric string)"
-            )
-
-    # Validate structures
+    """
+    We now only *require* BOXLABELSTRUCTURES.
+    BOXLABELVARIABLES is optional and only used if present in JSON
+    (main source is now the DB provider).
+    """
+    # structures are required
     structs_any = box_block.get("BOXLABELSTRUCTURES")
     if not isinstance(structs_any, Mapping):
         raise TypeError("'BOXLABELSTRUCTURES' must be an object")
@@ -100,9 +82,28 @@ def _validate_box(box_block: Mapping[str, Any]) -> BoxBlock:
             raise ValueError(f"Label '{name}' must be an array of strings (ZPL lines)")
         structures[name] = list(lines)
 
+    # variables in JSON are now optional / legacy
+    vars_any = box_block.get("BOXLABELVARIABLES", {})
+    variables: BoxVariables = {}
+    if vars_any:
+        if not isinstance(vars_any, Mapping):
+            raise TypeError("'BOXLABELVARIABLES' must be an object if present")
+
+        for key, value in vars_any.items():
+            if not isinstance(key, str):
+                raise ValueError("All BOXLABELVARIABLES keys must be strings")
+            if isinstance(value, int):
+                variables[key] = value
+            elif isinstance(value, str) and value.isdigit():
+                variables[key] = int(value)
+            else:
+                raise ValueError(
+                    f"Variable '{key}' value must be an int (or numeric string)"
+                )
+
     return {
-        "BOXLABELVARIABLES": variables,
         "BOXLABELSTRUCTURES": structures,
+        **({"BOXLABELVARIABLES": variables} if variables else {}),
     }
 
 
@@ -117,7 +118,27 @@ _loader = JsonConfigLoader[BoxBlock](
 
 
 # ---------------------------------------------------------------------------
-# Public loading helpers
+# Variables provider (DB, JSON, etc.)
+# ---------------------------------------------------------------------------
+
+# Signature for any provider that returns the mapping {placeholder_name: fn_int}
+BoxVariablesProvider = Callable[[], BoxVariables]
+
+# Default provider is the DB-backed function
+_box_variables_provider: BoxVariablesProvider = get_box_label_variables_from_db
+
+
+def set_box_variables_provider(provider: BoxVariablesProvider) -> None:
+    """
+    Override the source of BOXLABELVARIABLES, if needed (for tests or
+    alternate loading strategies).
+    """
+    global _box_variables_provider
+    _box_variables_provider = provider
+
+
+# ---------------------------------------------------------------------------
+# Public helpers
 # ---------------------------------------------------------------------------
 
 
@@ -126,13 +147,19 @@ def load_box_config(
     *,
     logger: Optional[logging.Logger] = None,
 ) -> BoxBlock:
-    """Load box label configuration from JSON."""
-    return _loader.load(path, logger=logger)
+    """
+    Load box label configuration from JSON (structures), and attach the
+    current DB-derived BOXLABELVARIABLES so callers see a complete block.
+    """
+    block = dict(_loader.load(path, logger=logger))
+    # always inject current DB variables into the block
+    block["BOXLABELVARIABLES"] = get_box_variables()
+    return block  # type: ignore[return-value]
 
 
 def get_box_variables() -> BoxVariables:
-    """Return a copy of the variable mapping."""
-    return dict(_loader.get()["BOXLABELVARIABLES"])
+    """Get BOXLABELVARIABLES from the active provider (DB by default)."""
+    return dict(_box_variables_provider())
 
 
 def list_box_label_names() -> List[str]:
@@ -147,7 +174,7 @@ def get_box_label_lines(name: str) -> List[str]:
     except KeyError as exc:
         available = ", ".join(list_box_label_names())
         raise KeyError(
-            f"Box label structure '{name}' not found. " f"Available: {available}"
+            f"Box label structure '{name}' not found. Available: {available}"
         ) from exc
 
 
@@ -193,7 +220,7 @@ def validate_placeholder_usage(name: str) -> None:
 def compile_box_label_to_fn(name: str) -> List[str]:
     """
     Replace placeholders like {CODE} in the template with their
-    numeric ^FN values from BOXLABELVARIABLES.
+    numeric ^FN values from the active provider.
     """
     vars_map = get_box_variables()
 
