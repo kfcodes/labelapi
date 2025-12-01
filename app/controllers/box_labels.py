@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal, InvalidOperation
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
@@ -50,6 +51,48 @@ def _label_is_large(value: int | bool | str) -> str:
     return "large" if is_large else "small"
 
 
+def format_unit_net_weight(raw: str | None) -> str:
+    """
+    Format unit_net_weight so that:
+      - If value < 1 (e.g. 0.03000), treat as kg and convert to grams.
+      - Trim trailing zeros after the decimal.
+      - No decimal point if it's an integer (50g, not 50.0g).
+    """
+    if raw in (None, ""):
+        return ""
+
+    s = str(raw).strip()
+
+    try:
+        dec = Decimal(s)
+    except InvalidOperation:
+        # Not a number? Return as-is.
+        return s
+
+    if dec == 0:
+        return "0g"
+
+    # Check if there's anything before the decimal in the original string
+    if "." in s:
+        int_part, _ = s.split(".", 1)
+    else:
+        int_part = s
+
+    # If no number above the decimal -> convert kg → g
+    if int_part in ("0", "-0"):
+        grams = dec * Decimal("1000")
+
+        # normalize() removes trailing zeros; {:f} avoids scientific notation
+        grams_str = "{:f}".format(grams.normalize()).rstrip(".")
+
+        return f"{grams_str}g"
+
+    # Otherwise, treat as kg, but still trim trailing zeros
+    kg_str = "{:f}".format(dec.normalize()).rstrip(".")
+
+    return f"{kg_str}Kg"
+
+
 async def main_box_label_function(
     unique_finished_product_id: int,
     blend_id: int,
@@ -65,10 +108,15 @@ async def main_box_label_function(
             f"No box label data found for finished_product_id={unique_finished_product_id}"
         )
 
-    # pprint(data)
+    # if "unit_net_weight" in data:
+    if 7 in data:
+        data[7] = format_unit_net_weight(data[7])
+        pprint(data)
+
     label_size = _label_is_large(meta["label_size"])
 
     label_text_zpl = _build_label_object_string(meta["template_name"], data, quantity)
+
     print(label_text_zpl)
 
     return label_size, label_text_zpl
