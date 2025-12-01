@@ -92,7 +92,7 @@ def upload_internal_label_structures_to_printers(
 def upload_box_label_structures_to_printers(
     printers: List[Printer],
     *,
-    dry_run: bool = True,
+    dry_run: bool = False,
     logger: Optional[Logger] = print,
 ) -> str:
     """

@@ -19,7 +19,22 @@ async def get_box_label_metadata_by_product_code(product_ids: tuple) -> Optional
     # print(label_metadata.format(str(product_ids)))
     data = read_db(label_metadata.format(str(product_ids))) or ()
 
-    return data
+    return data[0]
+
+
+async def get_box_label_metadata(
+    unique_finished_product_id: int,
+) -> Optional[dict]:
+
+    unique_label_data = str(f"{os.getenv('LABELMETADATA')}")
+
+    meta = read_db(unique_label_data.format(int(unique_finished_product_id))) or []
+
+    # print(meta)
+
+    # result = {item["label_field_id"]: item["field_value"] for item in data.values()}
+
+    return meta[0]
 
 
 async def get_unique_box_label_info(
@@ -27,7 +42,7 @@ async def get_unique_box_label_info(
     blend_id: int,
 ) -> Optional[dict]:
 
-    unique_label_data = str(f"{os.getenv('UNIQUE_DATA')}")
+    unique_label_data = str(f"{os.getenv('FULLQUERY')}")
     # print(unique_label_data.format(int(blend_id), int(unique_finished_product_id)))
 
     data = (
@@ -37,7 +52,9 @@ async def get_unique_box_label_info(
         or []
     )
 
-    return data[0]
+    result = {item["label_field_id"]: item["field_value"] for item in data.values()}
+
+    return result
 
 
 async def a_get_label_context_for_brand(brand_id: int) -> Optional[Dict[str, Any]]:

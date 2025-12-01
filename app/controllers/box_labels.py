@@ -5,44 +5,34 @@ from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 from app.database import (
+    get_box_label_metadata,
     get_box_label_metadata_by_product_code,
     get_unique_box_label_info,
 )
 from app.static_json_readers import get_box_variables
 
 
-def _build_label_object_string(values: dict, quantity: int) -> str:
-    # if barcode_format is not null format barcode otherwise leave alone
-    # ^FN^FD{values.get("barcode_format", "")}^FS
-    # barcode_format
-    # apply the varaibles then to the string and append the barcode to the end
+def _build_label_object_string(name: str, values: dict, quantity: int) -> str:
+    """
+    name: ZPL template name (without .ZPL extension)
+    values: dict[int, str | None] mapping FN number -> FD value
+    quantity: number of labels to print
+    """
 
+    # Build the FN/FD lines from the dict
+    fn_lines = []
+    for fn, field_value in sorted(values.items()):
+        fd_text = "" if field_value is None else str(field_value)
+        fn_lines.append(f"^FN{fn}^FD{fd_text}^FS")
+
+    fn_block = "\n".join(fn_lines)
+
+    # Build the full label object string
     return f"""
 ^XA
+^XFE:{name}.ZPL^FS
 ^PQ{int(quantity)}
-^XFE:{values.get("template_name", "")}.ZPL^FS
-^FN999^FD{values.get("", "")}^FS
-
-^FN1^FD{values.get("customer_po_id", "")}^FS
-
-^FN3^FD{values.get("product_description", "")}^FS
-
-^FX Product Metadata
-^FN4^FD{values.get("brand_name", "")}^FS
-^FN6^FD{values.get("customer_specified_description", "")}^FS
-^FN7^FD{values.get("product_group", "")}^FS
-^FN9^FD{values.get("flavour", "")}^FS
-^FN11^FD{values.get("sku_code", "")}^FS
-^FN12^FD{values.get("unit_net_weight", "")}^FS
-^FN13^FD{values.get("case_unit_quantity", "")}^FS
-
-^FX Unique Identifying information
-^FN16^FD{values.get("lot_code", "")}^FS
-^FN17^FD{values.get("bbe_code", "")}^FS
-^FN18^FD{values.get("batch_code", "")}^FS
-^FN20^FD{values.get("unit_gtin", "")}^FS
-^FN21^FD{values.get("case_gtin", "")}^FS
-
+{fn_block}
 ^XZ
 """
 
@@ -66,6 +56,8 @@ async def main_box_label_function(
     quantity: int,
 ) -> Tuple[str, str]:
 
+    meta = await get_box_label_metadata(unique_finished_product_id)
+
     data = await get_unique_box_label_info(unique_finished_product_id, blend_id)
 
     if data is None:
@@ -73,10 +65,10 @@ async def main_box_label_function(
             f"No box label data found for finished_product_id={unique_finished_product_id}"
         )
 
-    # print(data)
-    label_size = _label_is_large(data["label_type_size_is_large"])
+    # pprint(data)
+    label_size = _label_is_large(meta["label_size"])
 
-    label_text_zpl = _build_label_object_string(data, quantity)
+    label_text_zpl = _build_label_object_string(meta["template_name"], data, quantity)
     print(label_text_zpl)
 
     return label_size, label_text_zpl

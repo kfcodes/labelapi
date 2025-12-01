@@ -3,6 +3,7 @@ from .label_data_gateway import (
     a_get_label_context_for_brand,
     a_get_required_eol_values,
     get_barcode_formats_for_type,
+    get_box_label_metadata,
     get_box_label_metadata_by_product_code,
     get_box_label_variables,
     get_brand_id_for_product,
@@ -13,6 +14,7 @@ from .read_db import read_db, read_to_list_index
 from .write_db import update_pallet_packing_list, write_db
 
 __all__ = [
+    "get_box_label_metadata",
     "get_box_label_metadata_by_product_code",
     "a_get_label_context_for_brand",
     "a_get_required_eol_values",
