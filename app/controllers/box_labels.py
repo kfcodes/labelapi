@@ -82,7 +82,8 @@ async def main_box_label_function(
     return label_size, label_text_zpl
 
 
-async def check_box_label_exists(product_ids: list) -> str:
+async def check_box_label_exists(product_ids: tuple) -> str:
+
     meta = await get_box_label_metadata_by_product_code(product_ids)
     if meta is None:
         return None
