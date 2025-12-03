@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-# from .box_labels import (
-#     LabelTypeContext,
-#     generate_label_structure,
-#     get_label_fields,
-#     main_box_label_function,
-#     main_print_box_label_function,
-# )
+from .box_labels import main_box_label_function
 from .config_loader import load_all_config_data
 from .internal_labels import (
     blank_pallet_labels,
@@ -42,10 +36,7 @@ __all__ = [
     "small_blend_label_function",
     "blank_pallet_labels",
     # box
-    "get_label_fields",
-    "generate_label_structure",
     "main_box_label_function",
-    "LabelTypeContext",
     # pallet
     "main_pallet_label_function",
     "print_blank_pallet_labels",

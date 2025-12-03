@@ -51,7 +51,7 @@ def _label_is_large(value: int | bool | str) -> str:
     return "large" if is_large else "small"
 
 
-def format_unit_net_weight(raw: str | None) -> str:
+def _format_unit_net_weight(raw: str | None) -> str:
     """
     Format unit_net_weight so that:
       - If value < 1 (e.g. 0.03000), treat as kg and convert to grams.
@@ -110,7 +110,7 @@ async def main_box_label_function(
 
     # if "unit_net_weight" in data:
     if 7 in data:
-        data[7] = format_unit_net_weight(data[7])
+        data[7] = _format_unit_net_weight(data[7])
         pprint(data)
 
     label_size = _label_is_large(meta["label_size"])
@@ -128,9 +128,11 @@ async def check_box_label_exists(product_ids: tuple) -> str:
     if meta is None:
         return None
 
-    print(meta)
-    # print(meta.get("product_description"))
-    return meta[0].get("product_description")
+    rows = list(meta.values())  # print(meta.get("product_description"))
+    # return meta[0].get("product_description")
+
+    return rows
+
     # return {
     #     product_id: meta.get("product_description") for product_id, meta in info.items()
     # }

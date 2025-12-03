@@ -16,10 +16,12 @@ if ENV_FILE.exists():
 
 async def get_box_label_metadata_by_product_code(product_ids: tuple) -> Optional[dict]:
     label_metadata = str(f"{os.getenv('METADATA')}")
-    # print(label_metadata.format(str(product_ids)))
+
+    print(label_metadata.format(str(product_ids)))
+
     data = read_db(label_metadata.format(str(product_ids))) or ()
 
-    return data[0]
+    return data
 
 
 async def get_box_label_metadata(
@@ -101,6 +103,6 @@ def get_box_label_variables() -> BoxVariables:
         for row in rows
         if row.get("key") is not None and row.get("value") is not None
     }
+    # print(mapping)
 
-    print(mapping)
     return mapping

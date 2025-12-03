@@ -116,18 +116,19 @@ async def print_box_label(
 async def box_label_check(body: BoxLabelCheckRequest) -> Dict[str, Any]:
     product_ids = body.product_ids
 
+    print(len(product_ids))
     if not product_ids:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail="At least one product_id must be provided.",
         )
     try:
-        if len(product_ids) == 1:
-            info = await check_box_label_exists(f"('{product_ids[0]}')")
-            # print("product ids length", product_ids.len())
+        if len(product_ids) > 1:
+            input = tuple(product_ids)
         else:
-            info = await check_box_label_exists(tuple(product_ids))
+            input = f"('{product_ids[0]}')"
 
+        info = await check_box_label_exists(input)
         if not info:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,

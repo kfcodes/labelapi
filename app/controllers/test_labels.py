@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import Dict, List
 
 from app.printer_connection.zpl_printer_logic import label_printer_connection
-from app.zpl.test_label_zpl_logic import (
-    build_gs1_datamatrix_fd,
-    build_template_zpl,
-    create_test_label_zpl,
-)
+
+# from app.zpl.test_label_zpl_logic import (
+#     build_gs1_datamatrix_fd,
+#     build_template_zpl,
+#     create_test_label_zpl,
+# )
 
 
 async def test_label_function() -> str:
