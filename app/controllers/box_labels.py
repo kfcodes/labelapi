@@ -117,7 +117,7 @@ async def main_box_label_function(
 
     label_text_zpl = _build_label_object_string(meta["template_name"], data, quantity)
 
-    print(label_text_zpl)
+    # print(label_text_zpl)
 
     return label_size, label_text_zpl
 

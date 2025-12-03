@@ -10,6 +10,7 @@ def label_printer_connection(
             mysocket.connect((printer_address, printer_port))
             mysocket.send(label)
         print(label)
+        print(f"printed on {printer_address}:{printer_port}")
         return {
             "status": "success",
             "printer": f"{printer_address}:{printer_port}",
