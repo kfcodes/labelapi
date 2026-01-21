@@ -1,12 +1,14 @@
 from fastapi import APIRouter, HTTPException, Request
 
+from app.controllers import blank_pallet_labels  # get_goodsin_label_printer,
 from app.controllers import (
-    blank_pallet_labels,
     get_pallet_label_printer,
+    goodsin_label_function,
     internal_product_id_and_description,
     large_blend_label_function,
     small_blend_label_function,
 )
+from app.schemas.goodsin_labels import GoodsInLabelBatch
 
 internal_label_router = APIRouter()
 
@@ -57,3 +59,19 @@ async def print_blank_pallet_labels(request: Request):
         return {"status": "ok", "zpl": resp}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@internal_label_router.post("/goodsin_labels")
+async def print_goodsin_labels_function(request: Request, batch: GoodsInLabelBatch):
+    printer, site = await get_pallet_label_printer(request)
+
+    labels = [item.model_dump() for item in batch.labels]
+
+    resp = await goodsin_label_function(labels=labels, printer=printer)
+
+    return {
+        "status": "ok",
+        "count": len(labels),
+        "printer": {"ip": printer.get("ip"), "port": printer.get("port")},
+        "result": str(resp),
+    }

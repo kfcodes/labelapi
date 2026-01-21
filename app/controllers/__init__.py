@@ -4,6 +4,7 @@ from .box_labels import main_box_label_function
 from .config_loader import load_all_config_data
 from .internal_labels import (
     blank_pallet_labels,
+    goodsin_label_function,
     internal_product_id_and_description,
     large_blend_label_function,
     small_blend_label_function,
@@ -52,4 +53,5 @@ __all__ = [
     "get_pallet_label_printer",
     "get_all_printer_connections",
     "test_label_function",
+    "goodsin_label_function",
 ]
