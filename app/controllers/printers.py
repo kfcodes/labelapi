@@ -131,6 +131,29 @@ async def get_printers_on_site(request: Request) -> Dict[str, Dict[str, PrinterC
     return get_printers_for_site(site_id)
 
 
+async def get_goodsin_label_printer(request: Request) -> Tuple[PrinterConn, str]:
+    """
+    Return (connection, site_id) for the site's non_production.pallet_label_printer.
+    """
+    site_id = await resolve_site_id_from_request(request)
+    site_map = get_addresses_for_site(site_id)
+
+    non_prod = site_map.get("non_production")
+    printer = (
+        non_prod.get("goodsin_label_printer") if isinstance(non_prod, Mapping) else None
+    )
+
+    conn = validate_printer_connection(
+        printer if isinstance(printer, Mapping) else None
+    )
+    if not conn:
+        raise ValueError(
+            f"Goodsin label printer not found or invalid for site '{site_id}'"
+        )
+
+    return conn, site_id
+
+
 async def get_pallet_label_printer(request: Request) -> Tuple[PrinterConn, str]:
     """
     Return (connection, site_id) for the site's non_production.pallet_label_printer.
