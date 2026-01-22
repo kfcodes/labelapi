@@ -19,6 +19,11 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / "env" / "label_variables.env")
 
 
+def _build_goodsin_barcode(unit_id: int) -> str:
+    uid = str(int(unit_id)).zfill(14)
+    return f"{uid}"
+
+
 async def internal_product_id_and_description(product_id, quantity, printer):
     try:
 
@@ -132,10 +137,9 @@ def create_goodsin_labels_zpl(label_structure_name: str, labels: list[dict]) -> 
                 order_no=item.get("order_no"),
                 weight_kg=item["weight_kg"],
                 batch_code=item["batch_code"],
-                unit_id=item["unit_id"],
-                unit_index=item["unit_index"],
                 labels_requested=item.get("labels_requested"),
                 product_description=item["product_description"],
+                barcode=_build_goodsin_barcode(item["unit_id"]),
             )
         )
     return "\n".join(zpl_parts)
