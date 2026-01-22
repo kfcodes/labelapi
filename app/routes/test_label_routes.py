@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.controllers import test_label_function
+from app.controllers.test_labels import test_label_function
 
 test_label_router = APIRouter()
 
