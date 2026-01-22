@@ -41,10 +41,9 @@ def create_goodsin_label_zpl(
     order_no: Optional[int],
     weight_kg: float,
     batch_code: str,
-    unit_id: int,
-    unit_index: int,
     labels_requested: Optional[int] = None,
     product_description: str,
+    barcode: str,
 ) -> str:
     order_no_str = "" if order_no is None else str(order_no)
     labels_requested_str = "" if labels_requested is None else str(labels_requested)
@@ -57,5 +56,6 @@ def create_goodsin_label_zpl(
         f"^FN6^FD{order_no_str}^FS\n"
         f"^FN7^FD{weight_kg}^FS\n"
         f"^FN8^FD{batch_code}^FS\n"
+        f"^FN9^FD{barcode}^FS\n"
         "^XZ"
     )
