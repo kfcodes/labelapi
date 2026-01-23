@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.controllers import blank_pallet_labels  # get_goodsin_label_printer,
 from app.controllers import (
+    blank_pallet_labels,
+    get_goodsin_label_printer,
     get_pallet_label_printer,
     goodsin_label_function,
     internal_product_id_and_description,
@@ -63,7 +64,7 @@ async def print_blank_pallet_labels(request: Request):
 
 @internal_label_router.post("/goodsin_labels")
 async def print_goodsin_labels_function(request: Request, batch: GoodsInLabelBatch):
-    printer, site = await get_pallet_label_printer(request)
+    printer, site = await get_goodsin_label_printer(request)
 
     labels = [item.model_dump() for item in batch.labels]
 
