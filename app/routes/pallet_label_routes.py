@@ -13,6 +13,7 @@ pallet_label_router = APIRouter()
 async def print_pallet_label(pallet_id: int, request: Request):
     try:
         printer, site = await get_pallet_label_printer(request)
+        print(printer, site)
         resp = await main_pallet_label_function(site, printer, pallet_id)
         return {"status": "ok", "response": resp}
     except Exception as e:
